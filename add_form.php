@@ -1,6 +1,4 @@
 <?php
-// This file is part of Lucimoo
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -15,11 +13,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB form.
+ * Import Microsoft Word file form.
  *
  * @package    booktool
  * @subpackage wordimport
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -42,9 +40,9 @@ class booktool_wordimport_add_form extends moodleform {
         }
 
         $mform->addElement('filemanager', 'importfile',
-                           get_string('epubfile', 'booktool_wordimport'), null,
+                           get_string('wordfile', 'booktool_wordimport'), null,
                            array('subdirs' => 0,
-                                 'accepted_types' => array('.epub')));
+                                 'accepted_types' => array('.docx')));
 
         $buttonarray = array();
         $buttonarray[] = &$mform->createElement('submit', 'submitfilebutton',
@@ -52,23 +50,6 @@ class booktool_wordimport_add_form extends moodleform {
         $buttonarray[] = &$mform->createElement('cancel');
         $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
         $mform->closeHeaderBefore('buttonar');
-
-        $mform->addElement('header', 'general',
-                           get_string('importurls', 'booktool_wordimport'));
-        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
-            $mform->setExpanded('general');
-        }
-
-        $mform->addElement('textarea', 'urllist',
-                           get_string('urllist', 'booktool_wordimport'),
-                           'wrap="virtual" rows="10" cols="50"');
-
-        $buttonarray = array();
-        $buttonarray[] = &$mform->createElement('submit', 'submitbutton',
-                                                get_string('importurls', 'booktool_wordimport'));
-        $buttonarray[] = &$mform->createElement('cancel');
-        $mform->addGroup($buttonarray, 'buttonar2', '', array(' '), false);
-        $mform->closeHeaderBefore('buttonar2');
 
         $mform->addElement('header', 'options', get_string('optionsheader',
                                                            'resource'));
@@ -79,20 +60,11 @@ class booktool_wordimport_add_form extends moodleform {
         $mform->addElement('checkbox', 'chaptersasbooks', '',
                            get_string('chaptersasbooks', 'booktool_wordimport'));
 
-        $mform->addElement('checkbox', 'enablestylesheets', '',
-                           get_string('enablestylesheets', 'booktool_wordimport'));
-        $mform->setDefault('enablestylesheets', 1);
-
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
         $mform->addElement('hidden', 'chapterid');
         $mform->setType('chapterid', PARAM_INT);
-
-        /*
-        $this->add_action_buttons(true, get_string('importurls',
-                                                   'booktool_wordimport'));
-        */
 
         $this->set_data($data);
     }

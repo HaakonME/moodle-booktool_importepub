@@ -1,6 +1,4 @@
 <?php
-// This file is part of Lucimoo
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -42,16 +40,6 @@ class booktool_wordimport_form extends moodleform {
 
         $mform->addElement('filepicker', 'importfile',
                            get_string('wordfile', 'booktool_wordimport'));
-
-        $mform->addElement('header', 'options', get_string('optionsheader',
-                                                           'resource'));
-        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
-            $mform->setExpanded('options');
-        }
-
-        $mform->addElement('checkbox', 'enablestylesheets', '',
-                           get_string('enablestylesheets', 'booktool_wordimport'));
-        $mform->setDefault('enablestylesheets', 1);
 
         $mform->addRule('importfile', null, 'required');
 

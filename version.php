@@ -16,15 +16,15 @@
  * Import Microsoft Word version file.
  *
  * @package    booktool
- * @subpackage importword
+ * @subpackage wordimport
  * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2015121800;
+$plugin->version = 2015121500;
 $plugin->requires = 2012062500;
-$plugin->component = 'booktool_importword';
+$plugin->component = 'booktool_wordimport';
 $plugin->maturity = MATURITY_BETA;
 $plugin->release = '0.0.1';

@@ -1,6 +1,4 @@
 <?php
-// This file is part of Lucimoo
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -32,5 +30,4 @@ $string['wordimport'] = 'Import Microsoft Word file as new book';
 $string['importchapters'] = 'Import chapters from Microsoft Word file';
 $string['importurls'] = 'Import from URLs';
 $string['urllist'] = 'URL list';
-$string['chaptersasbooks'] = 'Create one book per chapter';
-$string['enablestylesheets'] = 'Enable stylesheets';
+$string['chaptersasbooks'] = 'Create one book per Word file';

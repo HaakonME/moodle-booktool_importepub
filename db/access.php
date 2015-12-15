@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB access file.
+ * Import Microsoft Word file access file.
  *
  * @package    booktool
  * @subpackage wordimport

@@ -1,6 +1,4 @@
 <?php
-// This file is part of Lucimoo
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -78,14 +76,11 @@ if ($mform->is_cancelled()) {
                                           $draftid, 'id DESC', false)) {
             redirect($PAGE->url);
         }
-        $enablestylesheets = property_exists($data, 'enablestylesheets');
         foreach ($files as $file) {
             if (property_exists($data, 'chaptersasbooks')) {
-                toolbook_wordimport_add_word_chapters($file, $course, $section,
-                                                      $enablestylesheets);
+                toolbook_wordimport_add_word_chapters($file, $course, $section);
             } else {
-                toolbook_wordimport_add_word($file, $course, $section,
-                                             $enablestylesheets);
+                toolbook_wordimport_add_word($file, $course, $section);
             }
         }
     } else {
@@ -116,13 +111,10 @@ if ($mform->is_cancelled()) {
             }
             $file = $fs->create_file_from_string($fileinfo, $fdata);
             unset($fdata);
-            $enablestylesheets = property_exists($data, 'enablestylesheets');
             if (property_exists($data, 'chaptersasbooks')) {
-                toolbook_wordimport_add_word_chapters($file, $course, $section,
-                                                      $enablestylesheets);
+                toolbook_wordimport_add_word_chapters($file, $course, $section);
             } else {
-                toolbook_wordimport_add_word($file, $course, $section,
-                                             $enablestylesheets);
+                toolbook_wordimport_add_word($file, $course, $section);
             }
             if ($file) {
                 $file->delete();
