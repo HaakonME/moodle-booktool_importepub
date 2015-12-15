@@ -15,10 +15,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB form.
+ * Import Microsoft Word file form.
  *
  * @package    booktool
- * @subpackage importepub
+ * @subpackage wordimport
+ * @copyright  201 Eoin Campbell
  * @copyright  2013-2014 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,17 +31,17 @@ defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->libdir . DIRECTORY_SEPARATOR . 'formslib.php');
 
-class booktool_importepub_form extends moodleform {
+class booktool_wordimport_form extends moodleform {
 
     public function definition() {
         $mform = $this->_form;
         $data  = $this->_customdata;
 
         $mform->addElement('header', 'general',
-                           get_string('importchapters', 'booktool_importepub'));
+                           get_string('importchapters', 'booktool_wordimport'));
 
         $mform->addElement('filepicker', 'importfile',
-                           get_string('epubfile', 'booktool_importepub'));
+                           get_string('wordfile', 'booktool_wordimport'));
 
         $mform->addElement('header', 'options', get_string('optionsheader',
                                                            'resource'));
@@ -49,7 +50,7 @@ class booktool_importepub_form extends moodleform {
         }
 
         $mform->addElement('checkbox', 'enablestylesheets', '',
-                           get_string('enablestylesheets', 'booktool_importepub'));
+                           get_string('enablestylesheets', 'booktool_wordimport'));
         $mform->setDefault('enablestylesheets', 1);
 
         $mform->addRule('importfile', null, 'required');
@@ -91,7 +92,7 @@ class booktool_importepub_form extends moodleform {
                 $fs->delete_area_files($usercontext->id, 'user', 'draft',
                                        $data['importfile']);
             } /* else {
-                if (!$chapterfiles = toolbook_importepub_get_chapter_files($file, $usercontext)) {
+                if (!$chapterfiles = toolbook_wordimport_get_chapter_files($file, $usercontext)) {
                     $errors['importfile'] = get_string('errornochapters',
                                                        'booktool_importhtml');
                 }

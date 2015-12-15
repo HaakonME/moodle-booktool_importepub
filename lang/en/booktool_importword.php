@@ -18,18 +18,18 @@
  * Import EPUB language strings.
  *
  * @package    booktool
- * @subpackage importword
- * @copyright  2013-2014 Mikael Ylikoski
+ * @subpackage wordimport
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Lucimoo ebook import';
-$string['importepub:import'] = 'Import ebook';
-$string['epubfile'] = 'EPUB ebook';
-$string['importepub'] = 'Import ebook as new book';
-$string['importchapters'] = 'Import chapters from ebook';
+$string['pluginname'] = 'Microsoft Word file import';
+$string['wordimport:import'] = 'Import Microsoft Word file';
+$string['wordfile'] = 'Microsoft Word file';
+$string['wordimport'] = 'Import Microsoft Word file as new book';
+$string['importchapters'] = 'Import chapters from Microsoft Word file';
 $string['importurls'] = 'Import from URLs';
 $string['urllist'] = 'URL list';
 $string['chaptersasbooks'] = 'Create one book per chapter';

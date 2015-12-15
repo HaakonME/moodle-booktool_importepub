@@ -18,15 +18,15 @@
  * Import EPUB access file.
  *
  * @package    booktool
- * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @subpackage wordimport
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = array(
-    'booktool/importepub:import' => array(
+    'booktool/wordimport:import' => array(
         'riskbitmask' => RISK_XSS,
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,

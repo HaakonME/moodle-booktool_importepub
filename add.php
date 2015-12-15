@@ -15,11 +15,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB add book function.
+ * Import Microsoft Word file add book function.
  *
  * @package    booktool
- * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @subpackage wordimport
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -42,7 +42,7 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/book:addinstance', $context);
 require_capability('mod/book:edit', $context);
-require_capability('booktool/importepub:import', $context);
+require_capability('booktool/wordimport:import', $context);
 
 // =========================================================================
 
@@ -51,22 +51,22 @@ if (!(property_exists($USER, 'editing') and $USER->editing)) {
 }
 */
 
-$PAGE->set_url('/mod/book/tool/importepub/add.php', array('id' => $id));
+$PAGE->set_url('/mod/book/tool/wordimport/add.php', array('id' => $id));
 
 require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'locallib.php');
 require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'add_form.php');
 
-$PAGE->set_title(get_string('importepub', 'booktool_importepub'));
+$PAGE->set_title(get_string('wordimport', 'booktool_wordimport'));
 $PAGE->set_heading($course->fullname);
 
-$mform = new booktool_importepub_add_form(null, array('id' => $id));
+$mform = new booktool_wordimport_add_form(null, array('id' => $id));
 
 if ($mform->is_cancelled()) {
     // FIXME
     redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id");
 } else if ($data = $mform->get_data()) {
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('importepub', 'booktool_importepub'));
+    echo $OUTPUT->heading(get_string('wordimport', 'booktool_wordimport'));
 
     $fs = get_file_storage();
     $usercontext = context_user::instance($USER->id);
@@ -81,10 +81,10 @@ if ($mform->is_cancelled()) {
         $enablestylesheets = property_exists($data, 'enablestylesheets');
         foreach ($files as $file) {
             if (property_exists($data, 'chaptersasbooks')) {
-                toolbook_importepub_add_epub_chapters($file, $course, $section,
+                toolbook_wordimport_add_word_chapters($file, $course, $section,
                                                       $enablestylesheets);
             } else {
-                toolbook_importepub_add_epub($file, $course, $section,
+                toolbook_wordimport_add_word($file, $course, $section,
                                              $enablestylesheets);
             }
         }
@@ -102,11 +102,11 @@ if ($mform->is_cancelled()) {
             }
 
             $fileinfo = array('contextid' => $usercontext->id,
-                              'component' => 'importepub',
+                              'component' => 'wordimport',
                               'filearea' => 'draft',
                               'itemid' => 0,
                               'filepath' => '/',
-                              'filename' => 'luci.epub');
+                              'filename' => 'luci.word');
             $file = $fs->get_file($fileinfo['contextid'],
                                   $fileinfo['component'],
                                   $fileinfo['filearea'], $fileinfo['itemid'],
@@ -118,10 +118,10 @@ if ($mform->is_cancelled()) {
             unset($fdata);
             $enablestylesheets = property_exists($data, 'enablestylesheets');
             if (property_exists($data, 'chaptersasbooks')) {
-                toolbook_importepub_add_epub_chapters($file, $course, $section,
+                toolbook_wordimport_add_word_chapters($file, $course, $section,
                                                       $enablestylesheets);
             } else {
-                toolbook_importepub_add_epub($file, $course, $section,
+                toolbook_wordimport_add_word($file, $course, $section,
                                              $enablestylesheets);
             }
             if ($file) {
@@ -136,7 +136,7 @@ if ($mform->is_cancelled()) {
     die;
 } else {
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('importepub', 'booktool_importepub'));
+    echo $OUTPUT->heading(get_string('wordimport', 'booktool_wordimport'));
 
     $mform->display();
 

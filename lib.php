@@ -15,11 +15,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB library.
+ * Import Microsoft Word file library.
  *
  * @package    booktool
- * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @subpackage wordimport
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,7 +28,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-function booktool_importepub_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $booknode) {
+function booktool_wordimport_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $booknode) {
     global $CFG, $PAGE, $USER;
 
     if ($PAGE->cm->modname !== 'book') {
@@ -44,7 +44,7 @@ function booktool_importepub_extend_settings_navigation(settings_navigation $set
         $PAGE->cm->context = get_context_module::instance($PAGE->cm->instance);
     }
 
-    if (!(has_capability('booktool/importepub:import', $PAGE->cm->context) and
+    if (!(has_capability('booktool/wordimport:import', $PAGE->cm->context) and
           has_capability('mod/book:edit', $PAGE->cm->context) and
           property_exists($USER, 'editing') and $USER->editing)) {
         return;
@@ -52,14 +52,14 @@ function booktool_importepub_extend_settings_navigation(settings_navigation $set
 
     if ($CFG->version >= 2013051000.00 and
         has_capability('mod/book:addinstance', $PAGE->cm->context)) {
-        $url = new moodle_url('/mod/book/tool/importepub/add.php',
+        $url = new moodle_url('/mod/book/tool/wordimport/add.php',
                               array('id' => $PAGE->cm->id));
-        $booknode->add(get_string('importepub', 'booktool_importepub'),
+        $booknode->add(get_string('wordimport', 'booktool_wordimport'),
                        $url, navigation_node::TYPE_SETTING, null, null, null);
     }
 
-    $url = new moodle_url('/mod/book/tool/importepub/index.php',
+    $url = new moodle_url('/mod/book/tool/wordimport/index.php',
                           array('id' => $PAGE->cm->id));
-    $booknode->add(get_string('importchapters', 'booktool_importepub'),
+    $booknode->add(get_string('importchapters', 'booktool_wordimport'),
                    $url, navigation_node::TYPE_SETTING, null, null, null);
 }

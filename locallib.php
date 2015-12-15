@@ -18,8 +18,8 @@
  * Import EPUB library.
  *
  * @package    booktool
- * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @subpackage wordimport
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -29,7 +29,6 @@
 defined('MOODLE_INTERNAL') || die;
 
 require_once(dirname(__FILE__).'/lib.php');
-require_once(dirname(__FILE__).'/CSS/CSSParser.php');
 require_once($CFG->dirroot.'/course/lib.php');
 require_once($CFG->dirroot.'/mod/book/lib.php');
 require_once($CFG->dirroot.'/mod/book/locallib.php');
@@ -49,7 +48,7 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4
  * @param int $section
  * @param string $title
  */
-function toolbook_importepub_add_book($module, $course, $section, $title = null) {
+function toolbook_wordimport_add_book($module, $course, $section, $title = null) {
     $data = new stdClass();
 
     if ($title) {
@@ -99,7 +98,7 @@ function toolbook_importepub_add_book($module, $course, $section, $title = null)
  * @param object $data
  * @param string $title
  */
-function toolbook_importepub_update_book_title($data, $title) {
+function toolbook_wordimport_update_book_title($data, $title) {
     $data->name = substr($title, 0, 250);
     $data->intro = '<p>' . htmlentities($title, ENT_COMPAT, 'UTF-8') . '</p>';
     $data->introformat = 1;
@@ -115,14 +114,14 @@ function toolbook_importepub_update_book_title($data, $title) {
  * @param bool $enablestyles
  * @param bool $verbose
  */
-function toolbook_importepub_add_epub($package, $course, $section,
+function toolbook_wordimport_add_word($package, $course, $section,
                                       $enablestyles, $verbose = false) {
     global $DB, $OUTPUT;
 
     $module = $DB->get_record('modules', array('name' => 'book'), '*',
                               MUST_EXIST);
 
-    $data = toolbook_importepub_add_book($module, $course, $section);
+    $data = toolbook_wordimport_add_book($module, $course, $section);
     if (!$data) {
         echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
                                    'notifyproblem');
@@ -132,18 +131,18 @@ function toolbook_importepub_add_epub($package, $course, $section,
     // $context = context_course::instance($course->id);
 
     $context = context_module::instance($data->coursemodule);
-    toolbook_importepub_unzip_files($package, $context);
-    $title = toolbook_importepub_get_title($context);
+    toolbook_wordimport_unzip_files($package, $context);
+    $title = toolbook_wordimport_get_title($context);
     if ($title) {
-        toolbook_importepub_update_book_title($data, $title);
+        toolbook_wordimport_update_book_title($data, $title);
         rebuild_course_cache($course->id);
         // update_module($data);
     }
 
-    $chapterfiles = toolbook_importepub_get_chapter_files($package, $context);
-    $chapternames = toolbook_importepub_get_chapter_names($context);
+    $chapterfiles = toolbook_wordimport_get_chapter_files($package, $context);
+    $chapternames = toolbook_wordimport_get_chapter_names($context);
     $chapternames[0] = $title;
-    toolbook_importepub_delete_files($context);
+    toolbook_wordimport_delete_files($context);
 
     $cm = get_coursemodule_from_id('book', $data->coursemodule, 0, false,
                                    MUST_EXIST);
@@ -152,7 +151,7 @@ function toolbook_importepub_add_epub($package, $course, $section,
     echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
                                'notifysuccess');
 
-    return toolbook_importepub_import_chapters($package, 2, $chapterfiles,
+    return toolbook_wordimport_import_chapters($package, 2, $chapterfiles,
                                                $chapternames, $enablestyles,
                                                $book, $context, $verbose);
 }
@@ -165,7 +164,7 @@ function toolbook_importepub_add_epub($package, $course, $section,
  * @param int $section
  * @param bool $verbose
  */
-function toolbook_importepub_add_epub_chapters($package, $course, $section,
+function toolbook_wordimport_add_word_chapters($package, $course, $section,
                                                $enablestyles,
                                                $verbose = false) {
     global $DB, $OUTPUT;
@@ -173,7 +172,7 @@ function toolbook_importepub_add_epub_chapters($package, $course, $section,
     $module = $DB->get_record('modules', array('name' => 'book'), '*',
                               MUST_EXIST);
 
-    $data = toolbook_importepub_add_book($module, $course, $section);
+    $data = toolbook_wordimport_add_book($module, $course, $section);
     if (!$data) {
         echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
                                    'notifyproblem');
@@ -181,10 +180,10 @@ function toolbook_importepub_add_epub_chapters($package, $course, $section,
     }
 
     $context = context_module::instance($data->coursemodule);
-    toolbook_importepub_unzip_files($package, $context);
-    $chapterfiles = toolbook_importepub_get_chapter_files($package, $context);
-    $chapternames = toolbook_importepub_get_chapter_names($context);
-    toolbook_importepub_delete_files($context);
+    toolbook_wordimport_unzip_files($package, $context);
+    $chapterfiles = toolbook_wordimport_get_chapter_files($package, $context);
+    $chapternames = toolbook_wordimport_get_chapter_names($context);
+    toolbook_wordimport_delete_files($context);
 
     foreach ($chapterfiles as $chapterfile) {
         $title = '';
@@ -200,10 +199,10 @@ function toolbook_importepub_add_epub_chapters($package, $course, $section,
         }
 
         if ($data) {
-            toolbook_importepub_update_book_title($data, $title);
+            toolbook_wordimport_update_book_title($data, $title);
             rebuild_course_cache($course->id);
         } else {
-            $data = toolbook_importepub_add_book($module, $course, $section,
+            $data = toolbook_wordimport_add_book($module, $course, $section,
                                                  $title);
         }
 
@@ -215,7 +214,7 @@ function toolbook_importepub_add_epub_chapters($package, $course, $section,
         echo $OUTPUT->notification(get_string('importing',
                                               'booktool_importhtml'),
                                    'notifysuccess');
-        toolbook_importepub_import_chapters($package, 2, array($chapterfile),
+        toolbook_wordimport_import_chapters($package, 2, array($chapterfile),
                                             $chapternames, $enablestyles,
                                             $book, $context, $verbose);
         $data = null;
@@ -231,17 +230,17 @@ function toolbook_importepub_add_epub_chapters($package, $course, $section,
  * @param context_module $context
  * @param bool $verbose
  */
-function toolbook_importepub_import_epub($package, $book, $context,
+function toolbook_wordimport_import_word($package, $book, $context,
                                          $enablestyles, $verbose = false) {
     global $OUTPUT;
 
-    toolbook_importepub_unzip_files($package, $context);
-    $chapterfiles = toolbook_importepub_get_chapter_files($package, $context);
-    $chapternames = toolbook_importepub_get_chapter_names($context);
-    toolbook_importepub_delete_files($context);
+    toolbook_wordimport_unzip_files($package, $context);
+    $chapterfiles = toolbook_wordimport_get_chapter_files($package, $context);
+    $chapternames = toolbook_wordimport_get_chapter_names($context);
+    toolbook_wordimport_delete_files($context);
     echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
                                'notifysuccess');
-    return toolbook_importepub_import_chapters($package, 2, $chapterfiles,
+    return toolbook_wordimport_import_chapters($package, 2, $chapterfiles,
                                                $chapternames, $enablestyles,
                                                $book, $context, $verbose);
 }
@@ -252,7 +251,7 @@ function toolbook_importepub_import_epub($package, $book, $context,
  * @param stored_file $package EPUB file
  * @param context_module $context
  */
-function toolbook_importepub_unzip_files($package, $context) {
+function toolbook_wordimport_unzip_files($package, $context) {
     $packer = get_file_packer('application/zip');
     $files = $package->list_files($packer);
     $found = false;
@@ -269,7 +268,7 @@ function toolbook_importepub_unzip_files($package, $context) {
         return false;
     }
 
-    toolbook_importepub_delete_files($context);
+    toolbook_wordimport_delete_files($context);
     $package->extract_to_storage($packer, $context->id, 'mod_book',
                                  'importhtmltemp', 0, '/');
 }
@@ -279,7 +278,7 @@ function toolbook_importepub_unzip_files($package, $context) {
  *
  * @param context_module $context
  */
-function toolbook_importepub_delete_files($context) {
+function toolbook_wordimport_delete_files($context) {
     $fs = get_file_storage();
     $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
 }
@@ -291,7 +290,7 @@ function toolbook_importepub_delete_files($context) {
  *
  * @return array with DOM document and string
  */
-function toolbook_importepub_get_opf($context) {
+function toolbook_wordimport_get_opf($context) {
     if (!defined('CNT_NS')) {
         define('CNT_NS', 'urn:oasis:names:tc:opendocument:xmlns:container');
     }
@@ -351,8 +350,8 @@ function toolbook_importepub_get_opf($context) {
  *
  * @return string or null
  */
-function toolbook_importepub_get_title($context) {
-    list($opf, $opfroot) = toolbook_importepub_get_opf($context);
+function toolbook_wordimport_get_title($context) {
+    list($opf, $opfroot) = toolbook_wordimport_get_opf($context);
     if ($opf) {
         $items = $opf->getElementsByTagName('title');
         if ($items) {
@@ -369,10 +368,10 @@ function toolbook_importepub_get_title($context) {
  *
  * @return array mapping filepath => chapter name
  */
-function toolbook_importepub_get_chapter_names($context) {
+function toolbook_wordimport_get_chapter_names($context) {
     $chapternames = array();
 
-    list($opf, $opfroot) = toolbook_importepub_get_opf($context);
+    list($opf, $opfroot) = toolbook_wordimport_get_opf($context);
     if (!$opf) {
         return $chapternames;
     }
@@ -497,10 +496,10 @@ function toolbook_importepub_get_chapter_names($context) {
  *
  * @return array the html files found in the EPUB ebook
  */
-function toolbook_importepub_get_chapter_files($package, $context) {
+function toolbook_wordimport_get_chapter_files($package, $context) {
     $chapterfiles = array();
 
-    list($opf, $opfroot) = toolbook_importepub_get_opf($context);
+    list($opf, $opfroot) = toolbook_wordimport_get_opf($context);
     if (!$opf) {
         return $chapterfiles;
     }
@@ -547,7 +546,7 @@ function toolbook_importepub_get_chapter_files($package, $context) {
  * @param context_module $context
  * @param bool $verbose
  */
-function toolbook_importepub_import_chapters($package, $type, $chapterfiles,
+function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                                              $chapternames, $enablestyles,
                                              $book, $context, $verbose = true) {
     global $DB, $OUTPUT;
@@ -651,7 +650,7 @@ function toolbook_importepub_import_chapters($package, $type, $chapterfiles,
                         $text = '';
                         if (strtolower(substr($filepath, -4)) == '.css') {
                             try {
-                                $text = toolbook_importepub_get_css($file);
+                                $text = toolbook_wordimport_get_css($file);
                             } catch (Exception $e) {
                                 // Just ignore the CSS file if it cannot be read
                             }
@@ -721,7 +720,7 @@ function toolbook_importepub_import_chapters($package, $type, $chapterfiles,
     $DB->set_field('book', 'revision', $book->revision + 1, array('id' => $book->id));
 }
 
-function toolbook_importepub_get_css($file) {
+function toolbook_wordimport_get_css($file) {
     $cssparser = new Sabberworm\CSS\Parser($file->get_content());
     $css = $cssparser->parse();
     foreach ($css->getAllDeclarationBlocks() as $block) {

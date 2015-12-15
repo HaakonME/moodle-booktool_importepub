@@ -1,41 +1,41 @@
-# Lucimoo EPUB import/export add-ons for the Moodle book module
+# Microsoft Word file import/export plugins for the Moodle book module
 
-Lucimoo consists of two add-ons for the Moodle book module:
+This plugin consists of two plugins for the Moodle book module:
 
-*   The "importepub" add-on provides functionality to import
-    content from EPUB ebooks into book module books.
+*   The "wordimport" add-on provides functionality to import
+    content from Microsoft Word files into book module books.
 
-*   The "exportepub" add-on provides functionality to export
-    book module books as EPUB ebooks.
+*   The "wordexport" add-on provides functionality to export
+    book module books as Microsoft Word files.
 
 
 ## Requirements
 
 The book module is included in Moodle 2.3 and later, and by
-default these add-ons can only be installed in these versions
+default these plugins can only be installed in these versions
 of Moodle. If you use Moodle 2.0-2.2 and have manually installed
-the book module and want to use these add-ons, you must remove
+the book module and want to use these plugins, you must remove
 the line "$plugin->requires = 2012062500;" from the files
-"importepub/version.php" and "exportepub/version.php" before
+"wordimport/version.php" and "wordexport/version.php" before
 they can be installed.
 
 
 ## Installation
 
-The import and export add-ons can be installed independently
+The import and export plugins can be installed independently
 of each other, so if you only want one of them you do not
 need to install the other.
 
-In Moodle 2.5 and later you can install add-ons from the
+In Moodle 2.5 and later you can install plugins from the
 "Site administration" view. In older versions of Moodle
 you need to install them manually.
 
 Note that the "Administration" block (or "Settings" block
 in some versions of Moodle) must be visible in the
-user interface for the add-ons to work properly. It is
+user interface for the plugins to work properly. It is
 visible in default configurations, but can be configured
 to not be displayed, in which case users will not see the
-user interface controls for the add-ons.
+user interface controls for the plugins.
 
 ### Installation from the "Site administration" view
 
@@ -43,7 +43,7 @@ This is only possible with Moodle 2.5 and later.
 
 1.  Login as admin and visit the Moodle
     "Site administration" view, and click on
-    "Site administration" > "Plugins" > "Install add-ons"
+    "Site administration" > "Plugins" > "Install plugins"
     on the left.
 
 2.  Choose "Book / Book tool (booktool)" as the Plugin type.
@@ -57,16 +57,16 @@ This is only possible with Moodle 2.5 and later.
 6.  Click on the "Install add-on!" button.
 
 7.  Repeat 1-6 with the other Lucimoo ZIP package if you
-    want to install both the import and the export add-ons.
+    want to install both the import and the export plugins.
 
 ### Manual installation
 
 This is possible with Moodle 2.0 and later.
 
-1.  Unzip the Lucimoo ZIP package(s) to get the folder(s)
-    "importepub" and/or "exportepub".
+1.  Unzip the Word import or export ZIP package(s) to get the folder(s)
+    "wordimport" and/or "wordexport".
 
-2.  Upload or copy the "importepub" and/or "exportepub"
+2.  Upload or copy the "wordimport" and/or "wordexport"
     folder(s) into the "mod/book/tool/" folder of your
     Moodle installation.
 
@@ -76,14 +76,14 @@ This is possible with Moodle 2.0 and later.
     and follow the instructions to finish the installation.
 
 General add-on installation instructions are available at
-http://docs.moodle.org/27/en/Installing_add-ons
+http://docs.moodle.org/27/en/Installing_plugins
 
-### Upgrading from an older version of Lucimoo to a newer version
+### Upgrading from an older to a newer version
 
-The Lucimoo add-ons do not store any add-on specific data in the
+The plugins do not store any add-on specific data in the
 Moodle database. This means that you do not lose any data if you
 uninstall them, and you can upgrade to another version of the
-Lucimoo add-ons simply by uninstalling the old version and then
+plugins simply by uninstalling the old version and then
 install the new version.
 
 
@@ -95,7 +95,7 @@ editing the file "config.php".
 
 ## Usage
 
-### Exporting a book as an EPUB ebook
+### Exporting a book as a Microsoft Word file
 
 1.  Display the book you want to export.
 
@@ -104,7 +104,7 @@ editing the file "config.php".
     (In some versions of Moodle it is instead
     located under "Settings" > "Book administration")
 
-### Importing chapters from an EPUB ebook into an existing book
+### Importing chapters from a Microsoft Word file into an existing book
 
 1.  Display the book you want to import chapters into.
 
@@ -116,9 +116,9 @@ editing the file "config.php".
 3.  Click on the "Import chapters from ebook" link under
     "Administration" > "Book administration" on the left.
 
-4.  Select the EPUB file and click on "Import".
+4.  Select the Microsoft Word file and click on "Import".
 
-### Create new books from EPUB ebooks
+### Create new books from Microsoft Word files
 
 This functionality is only available with Moodle 2.5 and later.
 
@@ -140,12 +140,12 @@ This functionality is only available with Moodle 2.5 and later.
 
 5.  Either:
 
-    a) Select the EPUB file(s) you want to import,
+    a) Select the Microsoft Word file(s) you want to import,
        and click on "Import".
 
     or:
 
-    b) Enter URL:s for the EPUB file(s) you want to import,
+    b) Enter URL:s for the Microsoft Word file(s) you want to import,
        one on each line in the textbox, and click on
        "Import from URL:s".
 
@@ -160,25 +160,11 @@ This functionality is only available with Moodle 2.5 and later.
 
 ## Credits
 
-Norwegian translation by Haakon Meland Eriksen.
+This code is based on the Lucimoo Moodle plugin by Haakon Meland Eriksen.
 
-Spanish translation by Lupa.
 
-The Lucimoo EPUB import add-on includes code from the
-following external project:
-
-PHP-CSS-Parser
-Copyright (c) 2011 Raphael Schweikert, http://sabberworm.com/
-https://github.com/sabberworm/PHP-CSS-Parser
-
-The Lucimoo EPUB export add-on includes code from the
-following external project:
-
-PHPZip
-Copyright 2009-2012 A. Grandt
-https://github.com/Grandt/PHPZip
 
 
 ## Contact information
 
-Web site: http://lucidor.org/lucimoo/
+Web site: http://www.moodle2word.net/

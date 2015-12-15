@@ -18,8 +18,8 @@
  * Import EPUB import chapter function.
  *
  * @package    booktool
- * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @subpackage wordimport
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -43,7 +43,7 @@ require_course_login($course, true, $cm);
 
 $context = context_module::instance($cm->id);
 require_capability('mod/book:edit', $context);
-require_capability('booktool/importepub:import', $context);
+require_capability('booktool/wordimport:import', $context);
 
 // =========================================================================
 
@@ -60,7 +60,7 @@ if ($chapterid) {
     $chapter = false;
 }
 
-$PAGE->set_url('/mod/book/tool/importepub/index.php',
+$PAGE->set_url('/mod/book/tool/wordimport/index.php',
                array('id' => $id, 'chapterid' => $chapterid));
 
 require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'locallib.php');
@@ -69,7 +69,7 @@ require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'import_form.php');
 $PAGE->set_title($book->name);
 $PAGE->set_heading($course->fullname);
 
-$mform = new booktool_importepub_form(null, array('id' => $id,
+$mform = new booktool_wordimport_form(null, array('id' => $id,
                                                   'chapterid' => $chapterid));
 
 if ($mform->is_cancelled()) {
@@ -80,7 +80,7 @@ if ($mform->is_cancelled()) {
     }
 } else if ($data = $mform->get_data()) {
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('importchapters', 'booktool_importepub'));
+    echo $OUTPUT->heading(get_string('importchapters', 'booktool_wordimport'));
 
     $fs = get_file_storage();
     $draftid = file_get_submitted_draft_itemid('importfile');
@@ -91,7 +91,7 @@ if ($mform->is_cancelled()) {
     }
     $file = reset($files);
     $enablestylesheets = property_exists($data, 'enablestylesheets');
-    toolbook_importepub_import_epub($file, $book, $context,
+    toolbook_wordimport_import_word($file, $book, $context,
                                     $enablestylesheets);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php',
@@ -100,7 +100,7 @@ if ($mform->is_cancelled()) {
     die;
 } else {
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('importchapters', 'booktool_importepub'));
+    echo $OUTPUT->heading(get_string('importchapters', 'booktool_wordimport'));
 
     $mform->display();
 

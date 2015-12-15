@@ -1,6 +1,4 @@
 <?php
-// This file is part of Lucimoo
-//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -15,18 +13,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB version file.
+ * Import Microsoft Word version file.
  *
  * @package    booktool
- * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @subpackage importword
+ * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2014121800;
+$plugin->version = 2015121800;
 $plugin->requires = 2012062500;
-$plugin->component = 'booktool_importepub';
+$plugin->component = 'booktool_importword';
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.16';
+$plugin->release = '0.0.1';
