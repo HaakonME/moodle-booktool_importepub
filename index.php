@@ -86,9 +86,7 @@ if ($mform->is_cancelled()) {
         redirect($PAGE->url);
     }
     $file = reset($files);
-    $enablestylesheets = property_exists($data, 'enablestylesheets');
-    toolbook_wordimport_import_word($file, $book, $context,
-                                    $enablestylesheets);
+    toolbook_wordimport_import_word($file, $book, $context);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php',
                                                  array('id' => $id)));

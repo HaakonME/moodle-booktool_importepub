@@ -106,16 +106,14 @@ function toolbook_wordimport_update_book_title($data, $title) {
 }
 
 /**
- * Create a new book module from an EPUB ebook
+ * Create a new book module from a Word file
  *
- * @param stored_file $package EPUB file
+ * @param stored_file $package Word file
  * @param object $course
  * @param int $section
- * @param bool $enablestyles
  * @param bool $verbose
  */
-function toolbook_wordimport_add_word($package, $course, $section,
-                                      $enablestyles, $verbose = false) {
+function toolbook_wordimport_add_word($package, $course, $section, $verbose = false) {
     global $DB, $OUTPUT;
 
     $module = $DB->get_record('modules', array('name' => 'book'), '*',
@@ -152,21 +150,18 @@ function toolbook_wordimport_add_word($package, $course, $section,
                                'notifysuccess');
 
     return toolbook_wordimport_import_chapters($package, 2, $chapterfiles,
-                                               $chapternames, $enablestyles,
-                                               $book, $context, $verbose);
+                                               $chapternames, $book, $context, $verbose);
 }
 
 /**
- * Create new book modules from an EPUB ebook, one new book per chapter
+ * Create new book modules from a Word file, one new book per file
  *
- * @param stored_file $package EPUB file
+ * @param stored_file $package Word file
  * @param object $course
  * @param int $section
  * @param bool $verbose
  */
-function toolbook_wordimport_add_word_chapters($package, $course, $section,
-                                               $enablestyles,
-                                               $verbose = false) {
+function toolbook_wordimport_add_word_chapters($package, $course, $section, $verbose = false) {
     global $DB, $OUTPUT;
 
     $module = $DB->get_record('modules', array('name' => 'book'), '*',
@@ -215,23 +210,21 @@ function toolbook_wordimport_add_word_chapters($package, $course, $section,
                                               'booktool_importhtml'),
                                    'notifysuccess');
         toolbook_wordimport_import_chapters($package, 2, array($chapterfile),
-                                            $chapternames, $enablestyles,
-                                            $book, $context, $verbose);
+                                            $chapternames, $book, $context, $verbose);
         $data = null;
     }
     rebuild_course_cache($course->id);
 }
 
 /**
- * Import HTML pages from an EPUB ebook
+ * Import HTML pages from a Word file
  *
- * @param stored_file $package EPUB file
+ * @param stored_file $package Word file
  * @param stdClass $book
  * @param context_module $context
  * @param bool $verbose
  */
-function toolbook_wordimport_import_word($package, $book, $context,
-                                         $enablestyles, $verbose = false) {
+function toolbook_wordimport_import_word($package, $book, $context, $verbose = false) {
     global $OUTPUT;
 
     toolbook_wordimport_unzip_files($package, $context);
@@ -241,14 +234,13 @@ function toolbook_wordimport_import_word($package, $book, $context,
     echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
                                'notifysuccess');
     return toolbook_wordimport_import_chapters($package, 2, $chapterfiles,
-                                               $chapternames, $enablestyles,
-                                               $book, $context, $verbose);
+                                               $chapternames, $book, $context, $verbose);
 }
 
 /**
- * Unzip EPUB ebook
+ * Unzip Word file
  *
- * @param stored_file $package EPUB file
+ * @param stored_file $package Word file
  * @param context_module $context
  */
 function toolbook_wordimport_unzip_files($package, $context) {
@@ -274,7 +266,7 @@ function toolbook_wordimport_unzip_files($package, $context) {
 }
 
 /**
- * Delete previously unzipped EPUB ebook
+ * Delete previously unzipped Word file
  *
  * @param context_module $context
  */
@@ -284,7 +276,7 @@ function toolbook_wordimport_delete_files($context) {
 }
 
 /**
- * Get OPF DOM and OPF root path from previously unzipped EPUB ebook
+ * Get OPF DOM and OPF root path from previously unzipped Word file
  *
  * @param context_module $context
  *
@@ -344,7 +336,7 @@ function toolbook_wordimport_get_opf($context) {
 }
 
 /**
- * Get title from previously unzipped EPUB ebook
+ * Get title from previously unzipped Word file
  *
  * @param context_module $context
  *
@@ -362,7 +354,7 @@ function toolbook_wordimport_get_title($context) {
 }
 
 /**
- * Get chapter names from previously unzipped EPUB ebook
+ * Get chapter names from previously unzipped Word file
  *
  * @param context_module $context
  *
@@ -489,12 +481,12 @@ function toolbook_wordimport_get_chapter_names($context) {
 }
 
 /**
- * Returns all the html files from an EPUB ebook
+ * Returns all the html files from a Word file
  *
  * @param stored_file $package EPUB file to be processed
  * @param context_module $context
  *
- * @return array the html files found in the EPUB ebook
+ * @return array the html files found in the Word file
  */
 function toolbook_wordimport_get_chapter_files($package, $context) {
     $chapterfiles = array();
@@ -540,14 +532,12 @@ function toolbook_wordimport_get_chapter_files($package, $context) {
  * @param string $type type of the package ('typezipdirs' or 'typezipfiles')
  * @param array $chapterfiles
  * @param array $chapternames
- * @param bool $enablestyles
  * @param stdClass $book
  * @param context_module $context
  * @param bool $verbose
  */
 function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
-                                             $chapternames, $enablestyles,
-                                             $book, $context, $verbose = true) {
+                                             $chapternames, $book, $context, $verbose = true) {
     global $DB, $OUTPUT;
 
     $fs = get_file_storage();
@@ -580,9 +570,6 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                                                     array($book->id)) + 1;
                 $chapter->importsrc     = '/'.$chapterfile->pathname;
                 $chapter->content       = '';
-                if ($enablestyles) {
-                    $chapter->content   .= toolbook_importhtml_parse_styles($htmlcontent);
-                }
                 $chapter->content       .= '<div class="lucimoo">';
                 $chapter->content       .= toolbook_importhtml_parse_body($htmlcontent);
                 $chapter->content       .= '</div>';

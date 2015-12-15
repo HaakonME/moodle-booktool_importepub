@@ -81,43 +81,6 @@ if ($mform->is_cancelled()) {
                 toolbook_wordimport_add_word($file, $course, $section);
             }
         }
-    } else {
-        require_once($CFG->libdir . '/filelib.php');
-
-        foreach (preg_split("/\s+/", $data->urllist) as $line) {
-            if (!$line) {
-                continue;
-            }
-            $fdata = download_file_content($line);
-            if (!$fdata) {
-                echo $OUTPUT->notification('Could not import: ' . htmlentities($line, ENT_COMPAT, 'UTF-8'), 'notifyproblem');
-                continue;
-            }
-
-            $fileinfo = array('contextid' => $usercontext->id,
-                              'component' => 'wordimport',
-                              'filearea' => 'draft',
-                              'itemid' => 0,
-                              'filepath' => '/',
-                              'filename' => 'luci.word');
-            $file = $fs->get_file($fileinfo['contextid'],
-                                  $fileinfo['component'],
-                                  $fileinfo['filearea'], $fileinfo['itemid'],
-                                  $fileinfo['filepath'], $fileinfo['filename']);
-            if ($file) {
-                $file->delete();
-            }
-            $file = $fs->create_file_from_string($fileinfo, $fdata);
-            unset($fdata);
-            if (property_exists($data, 'chaptersasbooks')) {
-                toolbook_wordimport_add_word_chapters($file, $course, $section);
-            } else {
-                toolbook_wordimport_add_word($file, $course, $section);
-            }
-            if ($file) {
-                $file->delete();
-            }
-        }
     }
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php',
