@@ -510,8 +510,7 @@ function toolbook_wordimport_get_chapter_files($package, $context) {
     foreach ($items as $item) {
         if ($item->hasAttribute('id') and $item->hasAttribute('href') and
             $item->hasAttribute('media-type')) {
-            $manifest[$item->getAttribute('id')] =
-                array('href' => $item->getAttribute('href'),
+            $manifest[$item->getAttribute('id')] = array('href' => $item->getAttribute('href'),
                       'mediatype' => $item->getAttribute('media-type'));
         }
     }
@@ -577,7 +576,8 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                 $htmlcontent = toolbook_importhtml_fix_encoding($file->get_content());
 
                 $chapter->bookid        = $book->id;
-                $chapter->pagenum       = $DB->get_field_sql('SELECT MAX(pagenum) FROM {book_chapters} WHERE bookid = ?', array($book->id)) + 1;
+                $chapter->pagenum       = $DB->get_field_sql('SELECT MAX(pagenum) FROM {book_chapters} WHERE bookid = ?',
+                                                    array($book->id)) + 1;
                 $chapter->importsrc     = '/'.$chapterfile->pathname;
                 $chapter->content       = '';
                 if ($enablestyles) {
@@ -651,13 +651,6 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                 if ($file = $fs->get_file_by_hash(sha1("/$context->id/mod_book/importhtmltemp/0$filepath"))) {
                     if (!$oldfile = $fs->get_file_by_hash(sha1("/$context->id/mod_book/chapter/$chapter->id$filepath"))) {
                         $text = '';
-                        if (strtolower(substr($filepath, -4)) == '.css') {
-                            try {
-                                $text = toolbook_wordimport_get_css($file);
-                            } catch (Exception $e) {
-                                // Just ignore the CSS file if it cannot be read.
-                            }
-                        }
                         if ($text) {
                             $filerecord['filepath'] = dirname($filepath);
                             if (substr($filerecord['filepath'], -1) != '/') {
@@ -721,22 +714,4 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
     // Update the revision flag - this takes a long time, better to refetch the current value.
     $book = $DB->get_record('book', array('id' => $book->id));
     $DB->set_field('book', 'revision', $book->revision + 1, array('id' => $book->id));
-}
-
-function toolbook_wordimport_get_css($file) {
-    $cssparser = new Sabberworm\CSS\Parser($file->get_content());
-    $css = $cssparser->parse();
-    foreach ($css->getAllDeclarationBlocks() as $block) {
-        foreach ($block->getSelectors() as $selector) {
-            if ($selector->getSelector() == 'body') {
-                $selector->setSelector('div.lucimoo');
-            } else if ($selector->getSelector() == 'html') {
-                $selector->setSelector('div.lucimoo');
-            } else {
-                $selector->setSelector('div.lucimoo ' .
-                                       $selector->getSelector());
-            }
-        }
-    }
-    return $css->__toString();
 }
