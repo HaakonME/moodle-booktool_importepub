@@ -1,4 +1,6 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -27,12 +29,10 @@
 
 require(dirname(__FILE__).'/../../../../config.php');
 
-$id        = required_param('id', PARAM_INT);           // Course Module ID
-$chapterid = optional_param('chapterid', 0, PARAM_INT); // Chapter ID
+$id        = required_param('id', PARAM_INT);           // Course Module ID.
+$chapterid = optional_param('chapterid', 0, PARAM_INT); // Chapter ID.
 
-// =========================================================================
-// security checks
-
+// Security checks.
 $cm = get_coursemodule_from_id('book', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
@@ -42,8 +42,6 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/book:edit', $context);
 require_capability('booktool/wordimport:import', $context);
-
-// =========================================================================
 
 /*
 if (!(property_exists($USER, 'editing') and $USER->editing)) {

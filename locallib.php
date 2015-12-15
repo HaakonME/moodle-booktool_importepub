@@ -1,4 +1,6 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -32,7 +34,7 @@ require_once($CFG->dirroot.'/mod/book/lib.php');
 require_once($CFG->dirroot.'/mod/book/locallib.php');
 require_once($CFG->dirroot.'/mod/book/tool/importhtml/locallib.php');
 
-if (!function_exists('create_module')) {        // Moodle <= 2.4
+if (!function_exists('create_module')) {        // Moodle <= 2.4.
     function create_module($data) {
         return null;
     }
@@ -63,7 +65,7 @@ function toolbook_wordimport_add_book($module, $course, $section, $title = null)
     $data->introeditor = array();
     $data->introeditor['text'] = '<p>' . htmlentities($data->name, ENT_COMPAT, 'UTF-8') . '</p>';
     $data->introeditor['format'] = 1;
-    $data->introeditor['itemid'] = 0;   // FIXME
+    $data->introeditor['itemid'] = 0;   // FIXME.
 
     $data->course = $course->id;
     $data->section = $section;
@@ -126,7 +128,7 @@ function toolbook_wordimport_add_word($package, $course, $section,
         return;
     }
 
-    // $context = context_course::instance($course->id);
+    // @codingStandardsIgnoreLine $context = context_course::instance($course->id);
 
     $context = context_module::instance($data->coursemodule);
     toolbook_wordimport_unzip_files($package, $context);
@@ -134,7 +136,7 @@ function toolbook_wordimport_add_word($package, $course, $section,
     if ($title) {
         toolbook_wordimport_update_book_title($data, $title);
         rebuild_course_cache($course->id);
-        // update_module($data);
+        // @codingStandardsIgnoreLine update_module($data);
     }
 
     $chapterfiles = toolbook_wordimport_get_chapter_files($package, $context);
@@ -188,7 +190,7 @@ function toolbook_wordimport_add_word_chapters($package, $course, $section,
         if (array_key_exists($chapterfile->pathname, $chapternames)) {
             $title = $chapternames[$chapterfile->pathname];
         } else {
-            // $title = toolbook_importhtml_parse_title($htmlcontent, $chapterfile->pathname);
+            // @codingStandardsIgnoreLine $title = toolbook_importhtml_parse_title($htmlcontent, $chapterfile->pathname);
             $title = $chapterfile->pathname;
         }
         $title = trim($title);
@@ -304,7 +306,7 @@ function toolbook_wordimport_get_opf($context) {
 
     $fs = get_file_storage();
 
-    // Container
+    // Container.
     $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
                                        'importhtmltemp', 0, '/',
                                        'META-INF/container.xml');
@@ -326,7 +328,7 @@ function toolbook_wordimport_get_opf($context) {
         $opfroot = '';
     }
 
-    // OPF file
+    // OPF file.
     $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
                                        'importhtmltemp', 0, '/', $rootfile);
     $file = $fs->get_file_by_hash($filehash);
@@ -374,7 +376,7 @@ function toolbook_wordimport_get_chapter_names($context) {
         return $chapternames;
     }
 
-    // Find nav document (EPUB 3)
+    // Find nav document (EPUB 3).
     $nav = null;
     $items = $opf->getElementsByTagNameNS(OPF_NS, 'item');
     foreach ($items as $item) {
@@ -386,7 +388,7 @@ function toolbook_wordimport_get_chapter_names($context) {
     if ($nav) {
         $fs = get_file_storage();
 
-        // Container
+        // Container.
         $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
                                            'importhtmltemp', 0, '/',
                                            $opfroot . $nav);
@@ -401,7 +403,7 @@ function toolbook_wordimport_get_chapter_names($context) {
                     $navroot .= '/';
                 }
 
-                // Find links
+                // Find links.
                 $items = $doc->getElementsByTagNameNS(HTML_NS, 'a');
                 foreach ($items as $item) {
                     if ($item->hasAttribute('href')) {
@@ -418,7 +420,7 @@ function toolbook_wordimport_get_chapter_names($context) {
         }
     }
 
-    // Find ncx document (EPUB 2)
+    // Find ncx document (EPUB 2).
     $ncx = null;
     $el = $opf->getElementsByTagNameNS(OPF_NS, 'spine');
     if ($el and $el->item(0)->hasAttribute('toc')) {
@@ -440,7 +442,7 @@ function toolbook_wordimport_get_chapter_names($context) {
     if ($ncx) {
         $fs = get_file_storage();
 
-        // Container
+        // Container.
         $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
                                            'importhtmltemp', 0, '/',
                                            $opfroot . $ncx);
@@ -455,7 +457,7 @@ function toolbook_wordimport_get_chapter_names($context) {
                     $ncxroot .= '/';
                 }
 
-                // Find links
+                // Find links.
                 $items = $doc->getElementsByTagNameNS(NCX_NS, 'navPoint');
                 foreach ($items as $item) {
                     $el = $item->getElementsByTagNameNS(NCX_NS, 'content');
@@ -502,7 +504,7 @@ function toolbook_wordimport_get_chapter_files($package, $context) {
         return $chapterfiles;
     }
 
-    // Manifest
+    // Manifest.
     $manifest = array();
     $items = $opf->getElementsByTagNameNS(OPF_NS, 'item');
     foreach ($items as $item) {
@@ -514,7 +516,7 @@ function toolbook_wordimport_get_chapter_files($package, $context) {
         }
     }
 
-    // Spine
+    // Spine.
     $items = $opf->getElementsByTagNameNS(OPF_NS, 'itemref');
     foreach ($items as $item) {
         if ($item->hasAttribute('idref')) {
@@ -523,7 +525,7 @@ function toolbook_wordimport_get_chapter_files($package, $context) {
             if ($it['mediatype'] == 'application/xhtml+xml' or
                 $it['mediatype'] == 'text/html') {
                 $filepath = $opfroot . $it['href'];
-                // FIXME $filepath should be normalized (i.e. '/..' removed)
+                // FIXME $filepath should be normalized (i.e. '/..' removed).
                 $chapterfiles[] = (object) array('pathname' => $filepath);
             }
         }
@@ -553,8 +555,8 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
     $packer = get_file_packer('application/zip');
     $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
     $package->extract_to_storage($packer, $context->id, 'mod_book', 'importhtmltemp', 0, '/');
-    // $datafiles = $fs->get_area_files($context->id, 'mod_book', 'importhtmltemp', 0, 'id', false);
-    // echo "<pre>";p(var_export($datafiles, true));
+    // @codingStandardsIgnoreLine $datafiles = $fs->get_area_files($context->id, 'mod_book', 'importhtmltemp', 0, 'id', false);
+    // @codingStandardsIgnoreLine echo "<pre>";p(var_export($datafiles, true));
 
     $chapters = array();
 
@@ -566,7 +568,7 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
         if ($file = $fs->get_file_by_hash("$context->id/mod_book/importhtmltemp/0/$chapterfile->pathname")) {
             $htmlcontent = toolbook_importhtml_fix_encoding($file->get_content());
             $htmlchapters = toolbook_importhtml_parse_headings(toolbook_importhtml_parse_body($htmlcontent));
-            // TODO: process h1 as main chapter and h2 as subchapters
+            // TODO: process h1 as main chapter and h2 as subchapters.
         }
     } else {
         foreach ($chapterfiles as $chapterfile) {
@@ -603,7 +605,8 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                 $chapter->hidden        = 0;
                 $chapter->timecreated   = time();
                 $chapter->timemodified  = $chapter->timecreated;
-                if (preg_match('/_sub(\/|\.htm)/i', $chapter->importsrc)) { // If filename or directory ends with *_sub treat as subchapters
+                if (preg_match('/_sub(\/|\.htm)/i', $chapter->importsrc)) {
+                    // If filename or directory ends with *_sub treat as subchapters.
                     $chapter->subchapter = 1;
                 } else {
                     $chapter->subchapter = 0;
@@ -612,7 +615,9 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                 $chapter->id = $DB->insert_record('book_chapters', $chapter);
                 $chapters[$chapter->id] = $chapter;
 
+                // @codingStandardsIgnoreStart
                 // add_to_log($book->course, 'book', 'add chapter', 'view.php?id='.$context->instanceid.'&chapterid='.$chapter->id, $chapter->id, $context->instanceid);
+                // @codingStandardsIgnoreEnd
             }
         }
     }
@@ -622,7 +627,7 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
     }
     $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
     foreach ($chapters as $chapter) {
-        // find references to all files and copy them + relink them
+        // Find references to all files and copy them + relink them.
         $matches = null;
         if (preg_match_all('/(src|codebase|name|href)\s*=\s*[\'"]([^\'"#]+)(#[^\'"]*)?[\'"]/i', $chapter->content, $matches)) {
             $filerecord = array('contextid' => $context->id,
@@ -635,7 +640,7 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                 $filepath = toolbook_importhtml_fix_path($filepath);
 
                 if (strtolower($matches[1][$i]) === 'href') {
-                    // skip linked html files, we will try chapter relinking later
+                    // Skip linked html files, we will try chapter relinking later.
                     foreach ($allchapters as $target) {
                         if ($target->importsrc === $filepath) {
                             continue 2;
@@ -650,7 +655,7 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                             try {
                                 $text = toolbook_wordimport_get_css($file);
                             } catch (Exception $e) {
-                                // Just ignore the CSS file if it cannot be read
+                                // Just ignore the CSS file if it cannot be read.
                             }
                         }
                         if ($text) {
@@ -675,7 +680,7 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
     }
     unset($chapters);
 
-    // Relink relative HTML links
+    // Relink relative HTML links.
     $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
     foreach ($allchapters as $chapter) {
         $newcontent = $chapter->content;
@@ -684,7 +689,7 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                            $chapter->content, $matches)) {
             foreach ($matches[0] as $i => $match) {
                 if (strpos($matches[2][$i], ':') !== false or strpos($matches[2][$i], '@') !== false) {
-                    // it is either absolute or pluginfile link
+                    // It is either absolute or pluginfile link.
                     continue;
                 }
                 $chapterpath = dirname($chapter->importsrc).'/'.$matches[2][$i];
@@ -710,10 +715,10 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
         }
     }
 
-    // add_to_log($book->course, 'course', 'update mod', '../mod/book/view.php?id='.$context->instanceid, 'book '.$book->id);
+    // @codingStandardsIgnoreLine add_to_log($book->course, 'course', 'update mod', '../mod/book/view.php?id='.$context->instanceid, 'book '.$book->id);
     $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
 
-    // update the revision flag - this takes a long time, better to refetch the current value
+    // Update the revision flag - this takes a long time, better to refetch the current value.
     $book = $DB->get_record('book', array('id' => $book->id));
     $DB->set_field('book', 'revision', $book->revision + 1, array('id' => $book->id));
 }

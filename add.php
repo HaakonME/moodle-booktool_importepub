@@ -1,4 +1,6 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -27,11 +29,9 @@
 
 require(dirname(__FILE__).'/../../../../config.php');
 
-$id        = required_param('id', PARAM_INT);           // Course Module ID
+$id        = required_param('id', PARAM_INT);           // Course Module ID.
 
-// =========================================================================
-// security checks
-
+// Security checks.
 $cm = get_coursemodule_from_id('book', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
@@ -41,8 +41,6 @@ $context = context_module::instance($cm->id);
 require_capability('mod/book:addinstance', $context);
 require_capability('mod/book:edit', $context);
 require_capability('booktool/wordimport:import', $context);
-
-// =========================================================================
 
 /*
 if (!(property_exists($USER, 'editing') and $USER->editing)) {
@@ -60,7 +58,7 @@ $PAGE->set_heading($course->fullname);
 $mform = new booktool_wordimport_add_form(null, array('id' => $id));
 
 if ($mform->is_cancelled()) {
-    // FIXME
+    // FIXME.
     redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id");
 } else if ($data = $mform->get_data()) {
     echo $OUTPUT->header();

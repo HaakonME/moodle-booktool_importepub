@@ -1,4 +1,6 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -35,7 +37,7 @@ class booktool_wordimport_add_form extends moodleform {
         $data = $this->_customdata;
 
         $mform->addElement('header', 'generalfile', get_string('import'));
-        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
+        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5.
             $mform->setExpanded('generalfile');
         }
 
@@ -53,7 +55,7 @@ class booktool_wordimport_add_form extends moodleform {
 
         $mform->addElement('header', 'options', get_string('optionsheader',
                                                            'resource'));
-        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
+        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5.
             $mform->setExpanded('options');
         }
 
