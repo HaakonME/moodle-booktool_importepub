@@ -48,16 +48,13 @@ This is only possible with Moodle 2.5 and later.
 
 2.  Choose "Book / Book tool (booktool)" as the Plugin type.
 
-3.  Select the Lucimoo ZIP package you want to install.
+3.  Select the package you want to install.
 
 4.  Check the "Acknowledgement" box, if present.
 
 5.  Click on the "Install plugin from the ZIP file" button.
 
 6.  Click on the "Install plugin!" button.
-
-7.  Repeat 1-6 with the other Lucimoo ZIP package if you
-    want to install both the import and the export plugins.
 
 ### Manual installation
 
@@ -160,7 +157,7 @@ This functionality is only available with Moodle 2.5 and later.
 
 ## Credits
 
-This code is based on the Lucimoo Moodle plugin by Haakon Meland Eriksen.
+This code is based on the Lucimoo Moodle plugin by Haakon Meland Eriksen (cf. https://moodle.org/plugins/booktool_importepub).
 
 
 
