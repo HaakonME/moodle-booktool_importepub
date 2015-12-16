@@ -85,8 +85,10 @@ if ($mform->is_cancelled()) {
                                       $draftid, 'id DESC', false)) {
         redirect($PAGE->url);
     }
+    // Only 1 file can be uploaded at a time, so the $files array has 1 element.
     $file = reset($files);
-    toolbook_wordimport_import_word($file, $book, $context);
+    $splitonsubheadings = property_exists($data, 'splitonsubheadings');
+    toolbook_wordimport_import_word($file, $book, $context, $splitonsubheadings);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php',
                                                  array('id' => $id)));

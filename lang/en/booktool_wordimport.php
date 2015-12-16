@@ -31,3 +31,5 @@ $string['wordfile'] = 'Microsoft Word file';
 $string['importchapters'] = 'Import chapters from Microsoft Word file';
 $string['splitonsubheadings'] = 'Create subchapters based on subheadings';
 $string['splitonsubheadings_help'] = 'Subchapters will be created on "Heading 2" styles';
+$string['transformationfailed'] = 'XSLT transformation failed (<b>{$a}</b>)';
+

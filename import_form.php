@@ -39,9 +39,13 @@ class booktool_wordimport_form extends moodleform {
 
         $mform->addElement('header', 'general', get_string('importchapters', 'booktool_wordimport'));
 
+        // Word files are automatically split into book chapters based on Heading 1 styles.
+        // Does user want to split Word file into book subchapters based on Heading 2 styles (default to yes)?
         $mform->addElement('checkbox', 'splitonsubheadings', '', get_string('splitonsubheadings', 'booktool_wordimport'));
         $mform->addHelpButton('splitonsubheadings', 'splitonsubheadings', 'booktool_wordimport');
+        $mform->setDefault('splitonsubheadings', 1);
 
+        // User can select 1 and only 1 Word file which must have a .docx suffix (not .docm or .doc).
         $mform->addElement('filepicker', 'importfile', get_string('wordfile', 'booktool_wordimport'), null,
                            array('subdirs' => 0, 'accepted_types' => array('.docx')));
         $mform->addRule('importfile', null, 'required');
