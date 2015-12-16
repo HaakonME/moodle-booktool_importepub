@@ -50,14 +50,6 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
         return;
     }
 
-    if ($CFG->version >= 2013051000.00 and
-        has_capability('mod/book:addinstance', $PAGE->cm->context)) {
-        $url = new moodle_url('/mod/book/tool/wordimport/add.php',
-                              array('id' => $PAGE->cm->id));
-        $booknode->add(get_string('wordimport', 'booktool_wordimport'),
-                       $url, navigation_node::TYPE_SETTING, null, null, null);
-    }
-
     $url = new moodle_url('/mod/book/tool/wordimport/index.php',
                           array('id' => $PAGE->cm->id));
     $booknode->add(get_string('importchapters', 'booktool_wordimport'),

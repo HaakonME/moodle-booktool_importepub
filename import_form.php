@@ -37,12 +37,13 @@ class booktool_wordimport_form extends moodleform {
         $mform = $this->_form;
         $data  = $this->_customdata;
 
-        $mform->addElement('header', 'general',
-                           get_string('importchapters', 'booktool_wordimport'));
+        $mform->addElement('header', 'general', get_string('importchapters', 'booktool_wordimport'));
 
-        $mform->addElement('filepicker', 'importfile',
-                           get_string('wordfile', 'booktool_wordimport'));
+        $mform->addElement('checkbox', 'splitonsubheadings', '', get_string('splitonsubheadings', 'booktool_wordimport'));
+        $mform->addHelpButton('splitonsubheadings', 'splitonsubheadings', 'booktool_wordimport');
 
+        $mform->addElement('filepicker', 'importfile', get_string('wordfile', 'booktool_wordimport'), null,
+                           array('subdirs' => 0, 'accepted_types' => array('.docx')));
         $mform->addRule('importfile', null, 'required');
 
         $mform->addElement('hidden', 'id');
@@ -66,21 +67,15 @@ class booktool_wordimport_form extends moodleform {
         $usercontext = context_user::instance($USER->id);
         $fs = get_file_storage();
 
-        if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft',
-                                          $data['importfile'], 'id', false)) {
+        if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft', $data['importfile'], 'id', false)) {
             $errors['importfile'] = get_string('required');
             return $errors;
         } else {
             $file = reset($files);
             $mimetype = $file->get_mimetype();
-            if ($mimetype != 'application/epub+zip' and
-                $mimetype != 'application/zip' and
-                $mimetype != 'document/unknown' and
-                $mimetype != null) {
-                $errors['importfile'] = get_string('invalidfiletype', 'error',
-                                                   $file->get_filename());
-                $fs->delete_area_files($usercontext->id, 'user', 'draft',
-                                       $data['importfile']);
+            if ($mimetype != 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                $errors['importfile'] = get_string('invalidfiletype', 'error', $file->get_filename());
+                $fs->delete_area_files($usercontext->id, 'user', 'draft', $data['importfile']);
             } /* else {
                 if (!$chapterfiles = toolbook_wordimport_get_chapter_files($file, $usercontext)) {
                     $errors['importfile'] = get_string('errornochapters',
