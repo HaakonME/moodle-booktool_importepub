@@ -1,11 +1,11 @@
-# Microsoft Word file import/export plugins for the Moodle book module
+# Microsoft Word file import plugin for the Moodle book module
 
-This plugin consists of two plugins for the Moodle book module:
+This plugin is one of two associated plugins for the Moodle book module:
 
-*   The "wordimport" add-on provides functionality to import
+*   The "wordimport" plugin provides functionality to import
     content from Microsoft Word files into book module books.
 
-*   The "wordexport" add-on provides functionality to export
+*   The "wordexport" plugin provides functionality to export
     book module books as Microsoft Word files.
 
 
@@ -50,11 +50,11 @@ This is only possible with Moodle 2.5 and later.
 
 3.  Select the Lucimoo ZIP package you want to install.
 
-4.  Check the "Acknowledgement" box.
+4.  Check the "Acknowledgement" box, if present.
 
-5.  Click on the "Install add-on from the ZIP file" button.
+5.  Click on the "Install plugin from the ZIP file" button.
 
-6.  Click on the "Install add-on!" button.
+6.  Click on the "Install plugin!" button.
 
 7.  Repeat 1-6 with the other Lucimoo ZIP package if you
     want to install both the import and the export plugins.
@@ -75,12 +75,12 @@ This is possible with Moodle 2.0 and later.
     "Site administration" > "Notifications" on the left
     and follow the instructions to finish the installation.
 
-General add-on installation instructions are available at
+General plugin installation instructions are available at
 http://docs.moodle.org/27/en/Installing_plugins
 
 ### Upgrading from an older to a newer version
 
-The plugins do not store any add-on specific data in the
+The plugins do not store any plugin specific data in the
 Moodle database. This means that you do not lose any data if you
 uninstall them, and you can upgrade to another version of the
 plugins simply by uninstalling the old version and then
@@ -89,7 +89,7 @@ install the new version.
 
 ## Configuration
 
-The export add-on has a few settings that can be changed by
+The export plugin has a few settings that can be changed by
 editing the file "config.php".
 
 
