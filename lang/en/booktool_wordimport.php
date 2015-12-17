@@ -17,8 +17,7 @@
 /**
  * Import Word file language strings.
  *
- * @package    booktool
- * @subpackage wordimport
+ * @package    booktool_wordimport
  * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,4 +31,3 @@ $string['importchapters'] = 'Import chapters from Microsoft Word file';
 $string['splitonsubheadings'] = 'Create subchapters based on subheadings';
 $string['splitonsubheadings_help'] = 'Subchapters will be created on "Heading 2" styles';
 $string['transformationfailed'] = 'XSLT transformation failed (<b>{$a}</b>)';
-

@@ -17,8 +17,7 @@
 /**
  * Import Microsoft Word file library.
  *
- * @package    booktool
- * @subpackage wordimport
+ * @package    booktool_wordimport
  * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -28,7 +27,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-function booktool_wordimport_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $booknode) {
+/**
+ * Adds module specific settings to the settings block
+ *
+ * @param settings_navigation $settings The settings navigation object
+ * @param navigation_node $node The node to add module settings to
+ */
+function booktool_wordimport_extend_settings_navigation(settings_navigation $settings, navigation_node $node) {
     global $CFG, $PAGE, $USER;
 
     if ($PAGE->cm->modname !== 'book') {
@@ -52,6 +57,6 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
 
     $url = new moodle_url('/mod/book/tool/wordimport/index.php',
                           array('id' => $PAGE->cm->id));
-    $booknode->add(get_string('importchapters', 'booktool_wordimport'),
+    $node->add(get_string('importchapters', 'booktool_wordimport'),
                    $url, navigation_node::TYPE_SETTING, null, null, null);
 }
