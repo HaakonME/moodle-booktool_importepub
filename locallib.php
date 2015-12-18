@@ -110,11 +110,11 @@ function toolbook_wordimport_import_word($package, $book, $context, $splitonsubh
             // Get the heading text and create a HTML wrapper around the content, adding a title element.
             $sectioncontent = $sectionmatches[$i];
             preg_match('~<h1[^>]*>(.+)</h1>~is', $sectioncontent, $h1title);
-            $htmlfilecontent = "<html><head><title>" . substr($h1title[1], 0, 100) . 
+            $htmlfilecontent = "<html><head><title>" . substr($h1title[1], 0, 100) .
                 "</title></head><body>" . $sectioncontent . "</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
 
-            debugging(__FUNCTION__ . ":" . __LINE__ . ": h1 ({$chapfilename}) = \"" . 
+            debugging(__FUNCTION__ . ":" . __LINE__ . ": h1 ({$chapfilename}) = \"" .
                 substr($h1title[1], 0, 100) . "\"", DEBUG_WORDIMPORT);
         }
     } else {
