@@ -17,8 +17,7 @@
 /**
  * Import Microsoft Word file form.
  *
- * @package    booktool
- * @subpackage wordimport
+ * @package    booktool_wordimport
  * @copyright  201 Eoin Campbell
  * @copyright  2013-2014 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -48,6 +47,7 @@ class booktool_wordimport_form extends moodleform {
         // User can select 1 and only 1 Word file which must have a .docx suffix (not .docm or .doc).
         $mform->addElement('filepicker', 'importfile', get_string('wordfile', 'booktool_wordimport'), null,
                            array('subdirs' => 0, 'accepted_types' => array('.docx')));
+        $mform->addHelpButton('importfile', 'wordfile', 'booktool_wordimport');
         $mform->addRule('importfile', null, 'required');
 
         $mform->addElement('hidden', 'id');
@@ -80,12 +80,7 @@ class booktool_wordimport_form extends moodleform {
             if ($mimetype != 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
                 $errors['importfile'] = get_string('invalidfiletype', 'error', $file->get_filename());
                 $fs->delete_area_files($usercontext->id, 'user', 'draft', $data['importfile']);
-            } /* else {
-                if (!$chapterfiles = toolbook_wordimport_get_chapter_files($file, $usercontext)) {
-                    $errors['importfile'] = get_string('errornochapters',
-                                                       'booktool_importhtml');
-                }
-            } */
+            }
         }
 
         return $errors;

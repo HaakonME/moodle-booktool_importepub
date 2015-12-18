@@ -55,8 +55,6 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
         return;
     }
 
-    $url = new moodle_url('/mod/book/tool/wordimport/index.php',
-                          array('id' => $PAGE->cm->id));
-    $node->add(get_string('importchapters', 'booktool_wordimport'),
-                   $url, navigation_node::TYPE_SETTING, null, null, null);
+    $url = new moodle_url('/mod/book/tool/wordimport/index.php', array('id' => $PAGE->cm->id));
+    $node->add(get_string('importchapters', 'booktool_wordimport'), $url, navigation_node::TYPE_SETTING, null, null, null);
 }

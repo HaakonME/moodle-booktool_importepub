@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname'] = 'Microsoft Word file import';
 $string['wordimport:import'] = 'Import Microsoft Word file';
 $string['wordfile'] = 'Microsoft Word file';
+$string['wordfile_help'] = 'Upload Microsoft Word 2010 (or later) <i>.docx</i> files';
 $string['importchapters'] = 'Import chapters from Microsoft Word file';
 $string['splitonsubheadings'] = 'Create subchapters based on subheadings';
 $string['splitonsubheadings_help'] = 'Subchapters will be created on "Heading 2" styles';

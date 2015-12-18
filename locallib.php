@@ -17,8 +17,7 @@
 /**
  * Import EPUB library.
  *
- * @package    booktool
- * @subpackage wordimport
+ * @package    booktool_wordimport
  * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,8 +26,10 @@
  * (copyright 2011 Petr Skoda) from Moodle 2.4. */
 
 defined('MOODLE_INTERNAL') || die;
+define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 require_once(dirname(__FILE__).'/lib.php');
+require_once(dirname(__FILE__).'/xslemulatexslt.inc');
 require_once($CFG->dirroot.'/course/lib.php');
 require_once($CFG->dirroot.'/mod/book/lib.php');
 require_once($CFG->dirroot.'/mod/book/locallib.php');
@@ -38,58 +39,6 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4.
     function create_module($data) {
         return null;
     }
-}
-
-/**
- * Create a new book module
- *
- * @param object $module
- * @param object $course
- * @param int $section
- * @param string $title
- */
-function toolbook_wordimport_add_book($module, $course, $section, $title = null) {
-    $data = new stdClass();
-
-    if ($title) {
-        $data->name = substr($title, 0, 250);
-    } else {
-        $data->name = 'Untitled';
-    }
-    $data->numbering = 0;
-    $data->customtitles = 0;
-    $data->revision = 0;
-    $data->timecreated = time();
-    $data->timemodified = $data->timecreated;
-
-    $data->introeditor = array();
-    $data->introeditor['text'] = '<p>' . htmlentities($data->name, ENT_COMPAT, 'UTF-8') . '</p>';
-    $data->introeditor['format'] = 1;
-    $data->introeditor['itemid'] = 0;   // FIXME.
-
-    $data->course = $course->id;
-    $data->section = $section;
-
-    $data->module = $module->id;
-    $data->modulename = $module->name;
-    $data->visible = true;
-    $data->groupmode = $course->groupmode;
-    $data->groupingid = $course->defaultgroupingid;
-    $data->groupmembersonly = 0;
-
-    $data->completionexpected = 0;
-    $data->availablefrom = 0;
-    $data->availableuntil = 0;
-    $data->showavailability = 0;
-    $data->conditiongradegroup = array();
-    $data->conditionfieldgroup = array();
-
-    $data = create_module($data);
-    if (!$data) {
-        return null;
-    }
-
-    return $data;
 }
 
 /**
@@ -106,135 +55,71 @@ function toolbook_wordimport_update_book_title($data, $title) {
 }
 
 /**
- * Create a new book module from a Word file
- *
- * @param stored_file $package Word file
- * @param object $course
- * @param int $section
- * @param bool $verbose
- */
-function toolbook_wordimport_add_word($package, $course, $section, $verbose = false) {
-    global $DB, $OUTPUT;
-
-    $module = $DB->get_record('modules', array('name' => 'book'), '*',
-                              MUST_EXIST);
-
-    $data = toolbook_wordimport_add_book($module, $course, $section);
-    if (!$data) {
-        echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
-                                   'notifyproblem');
-        return;
-    }
-
-    // @codingStandardsIgnoreLine $context = context_course::instance($course->id);
-
-    $context = context_module::instance($data->coursemodule);
-    toolbook_wordimport_unzip_files($package, $context);
-    $title = toolbook_wordimport_get_title($context);
-    if ($title) {
-        toolbook_wordimport_update_book_title($data, $title);
-        rebuild_course_cache($course->id);
-        // @codingStandardsIgnoreLine update_module($data);
-    }
-
-    $chapterfiles = toolbook_wordimport_get_chapter_files($package, $context);
-    $chapternames = toolbook_wordimport_get_chapter_names($context);
-    $chapternames[0] = $title;
-    toolbook_wordimport_delete_files($context);
-
-    $cm = get_coursemodule_from_id('book', $data->coursemodule, 0, false,
-                                   MUST_EXIST);
-    $book = $DB->get_record('book', array('id' => $cm->instance), '*',
-                            MUST_EXIST);
-    echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
-                               'notifysuccess');
-
-    return toolbook_wordimport_import_chapters($package, 2, $chapterfiles,
-                                               $chapternames, $book, $context, $verbose);
-}
-
-/**
- * Create new book modules from a Word file, one new book per file
- *
- * @param stored_file $package Word file
- * @param object $course
- * @param int $section
- * @param bool $verbose
- */
-function toolbook_wordimport_add_word_chapters($package, $course, $section, $verbose = false) {
-    global $DB, $OUTPUT;
-
-    $module = $DB->get_record('modules', array('name' => 'book'), '*',
-                              MUST_EXIST);
-
-    $data = toolbook_wordimport_add_book($module, $course, $section);
-    if (!$data) {
-        echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
-                                   'notifyproblem');
-        return;
-    }
-
-    $context = context_module::instance($data->coursemodule);
-    toolbook_wordimport_unzip_files($package, $context);
-    $chapterfiles = toolbook_wordimport_get_chapter_files($package, $context);
-    $chapternames = toolbook_wordimport_get_chapter_names($context);
-    toolbook_wordimport_delete_files($context);
-
-    foreach ($chapterfiles as $chapterfile) {
-        $title = '';
-        if (array_key_exists($chapterfile->pathname, $chapternames)) {
-            $title = $chapternames[$chapterfile->pathname];
-        } else {
-            // @codingStandardsIgnoreLine $title = toolbook_importhtml_parse_title($htmlcontent, $chapterfile->pathname);
-            $title = $chapterfile->pathname;
-        }
-        $title = trim($title);
-        if ($title == '') {
-            $title = '*';
-        }
-
-        if ($data) {
-            toolbook_wordimport_update_book_title($data, $title);
-            rebuild_course_cache($course->id);
-        } else {
-            $data = toolbook_wordimport_add_book($module, $course, $section,
-                                                 $title);
-        }
-
-        $cm = get_coursemodule_from_id('book', $data->coursemodule, 0, false,
-                                       MUST_EXIST);
-        $book = $DB->get_record('book', array('id' => $cm->instance), '*',
-                                MUST_EXIST);
-        $context = context_module::instance($data->coursemodule);
-        echo $OUTPUT->notification(get_string('importing',
-                                              'booktool_importhtml'),
-                                   'notifysuccess');
-        toolbook_wordimport_import_chapters($package, 2, array($chapterfile),
-                                            $chapternames, $book, $context, $verbose);
-        $data = null;
-    }
-    rebuild_course_cache($course->id);
-}
-
-/**
  * Import HTML pages from a Word file
  *
  * @param stored_file $package Word file
  * @param stdClass $book
  * @param context_module $context
+ * @param bool $splitonsubheadings
  * @param bool $verbose
  */
-function toolbook_wordimport_import_word($package, $book, $context, $verbose = false) {
-    global $OUTPUT;
+function toolbook_wordimport_import_word($package, $book, $context, $splitonsubheadings, $verbose = false) {
+    global $CFG, $OUTPUT;
 
-    toolbook_wordimport_unzip_files($package, $context);
-    $chapterfiles = toolbook_wordimport_get_chapter_files($package, $context);
+    if (!$tmpfilename = $package->copy_content_to_temp()) {
+        // Cannot save file.
+        throw new moodle_exception(get_string('errorcreatingfile', 'error', $package->get_filename()));
+    }
+    // Process the Word file into a HTML file and images.
+    $imagesforzipping = array();
+    $html_content = toolbook_wordimport_convert_to_xhtml($tmpfilename, $splitonsubheadings, $imagesforzipping);
+
+
+    // Create a temporary Zip file to store the HTML and images for feeding to import function.
+    $zipfilename = dirname($tmpfilename) . DIRECTORY_SEPARATOR . basename($tmpfilename, ".tmp") . ".zip";
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": HTML Zip file: {$zipfilename}, Word file: {$tmpfilename}", DEBUG_WORDIMPORT);
+    $zipfile = new ZipArchive;
+    if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
+        // Cannot open zip file.
+        throw new moodle_exception('cannotopenzip', 'error');
+    }
+
+    // Add any images to the Zip file.
+    if (count($imagesforzipping) > 0) {
+        foreach ($imagesforzipping as $imagename => $imagedata) {
+            debugging(__FUNCTION__ . ":" . __LINE__ . ": image: {$imagename}", DEBUG_WORDIMPORT);
+            $zipfile->addFromString($imagename, $imagedata);
+        }
+    }
+
+    // Split the single HTML file into multiple chapters based on 
+    $h1matches = null;
+    $chapterfilenames = array();
+    $chapternames = array();
+    $foundh1matches = preg_match('~<h1[^>]*>(.+)</h1>~is', $html_content, $h1matches);
+    $nummatches = count($h1matches);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": found: {$foundh1matches}; num = {$nummatches}", DEBUG_WORDIMPORT);
+    if ($foundh1matches and $foundh1matches != 0) {
+        // Process the possibly-URL-escaped filename so that it matches the name in the file element.
+        for ($i = 0; $i < $nummatches; $i++) {
+            // Assign a filename and save the heading.
+            $chapterfilenames[$i] = "chap" . sprintf("%04d", $i) . ".htm";
+            $chapternames[$i] = $h1matches[$i];
+
+            debugging(__FUNCTION__ . ":" . __LINE__ . ": h1 ({$chapterfilenames[$i]}) = \"{$h1matches[$i]}\"", DEBUG_WORDIMPORT);
+
+            $zipfile->add_file_from_string(toolbook_importhtml_parse_body($html_content), $h1matches[$i]);
+        }
+    }
+
+    $zipfile->add_file_from_string("index.htm", $html_content);
+
+    $chapterfiles = toolbook_wordimport_get_chapter_files($zipfilename, $context, $splitonsubheadings);
     $chapternames = toolbook_wordimport_get_chapter_names($context);
     toolbook_wordimport_delete_files($context);
-    echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
-                               'notifysuccess');
-    return toolbook_wordimport_import_chapters($package, 2, $chapterfiles,
-                                               $chapternames, $book, $context, $verbose);
+    echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'), 'notifysuccess');
+    $package->archive_file($zipfile);
+    return toolbook_wordimport_import_chapters($package, 2, $chapterfiles, $chapternames, $book, $context, $verbose);
 }
 
 /**
@@ -262,7 +147,7 @@ function toolbook_wordimport_unzip_files($package, $context) {
 
     toolbook_wordimport_delete_files($context);
     $package->extract_to_storage($packer, $context->id, 'mod_book',
-                                 'importhtmltemp', 0, '/');
+                                 'wordimporttemp', 0, '/');
 }
 
 /**
@@ -272,7 +157,7 @@ function toolbook_wordimport_unzip_files($package, $context) {
  */
 function toolbook_wordimport_delete_files($context) {
     $fs = get_file_storage();
-    $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
+    $fs->delete_area_files($context->id, 'mod_book', 'wordimporttemp', 0);
 }
 
 /**
@@ -300,7 +185,7 @@ function toolbook_wordimport_get_opf($context) {
 
     // Container.
     $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                       'importhtmltemp', 0, '/',
+                                       'wordimporttemp', 0, '/',
                                        'META-INF/container.xml');
     $file = $fs->get_file_by_hash($filehash);
     if (!$file) {
@@ -322,7 +207,7 @@ function toolbook_wordimport_get_opf($context) {
 
     // OPF file.
     $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                       'importhtmltemp', 0, '/', $rootfile);
+                                       'wordimporttemp', 0, '/', $rootfile);
     $file = $fs->get_file_by_hash($filehash);
     if (!$file) {
         return false;
@@ -382,7 +267,7 @@ function toolbook_wordimport_get_chapter_names($context) {
 
         // Container.
         $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                           'importhtmltemp', 0, '/',
+                                           'wordimporttemp', 0, '/',
                                            $opfroot . $nav);
         $file = $fs->get_file_by_hash($filehash);
         if ($file) {
@@ -436,7 +321,7 @@ function toolbook_wordimport_get_chapter_names($context) {
 
         // Container.
         $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                           'importhtmltemp', 0, '/',
+                                           'wordimporttemp', 0, '/',
                                            $opfroot . $ncx);
         $file = $fs->get_file_by_hash($filehash);
         if ($file) {
@@ -542,9 +427,9 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
 
     $fs = get_file_storage();
     $packer = get_file_packer('application/zip');
-    $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
-    $package->extract_to_storage($packer, $context->id, 'mod_book', 'importhtmltemp', 0, '/');
-    // @codingStandardsIgnoreLine $datafiles = $fs->get_area_files($context->id, 'mod_book', 'importhtmltemp', 0, 'id', false);
+    $fs->delete_area_files($context->id, 'mod_book', 'wordimporttemp', 0);
+    $package->extract_to_storage($packer, $context->id, 'mod_book', 'wordimporttemp', 0, '/');
+    // @codingStandardsIgnoreLine $datafiles = $fs->get_area_files($context->id, 'mod_book', 'wordimporttemp', 0, 'id', false);
     // @codingStandardsIgnoreLine echo "<pre>";p(var_export($datafiles, true));
 
     $chapters = array();
@@ -570,7 +455,7 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
                                                     array($book->id)) + 1;
                 $chapter->importsrc     = '/'.$chapterfile->pathname;
                 $chapter->content       = '';
-                $chapter->content       .= '<div class="lucimoo">';
+                $chapter->content       .= '<div class="wordimport">';
                 $chapter->content       .= toolbook_importhtml_parse_body($htmlcontent);
                 $chapter->content       .= '</div>';
                 if (array_key_exists($chapterfile->pathname, $chapternames)) {
@@ -696,9 +581,209 @@ function toolbook_wordimport_import_chapters($package, $type, $chapterfiles,
     }
 
     // @codingStandardsIgnoreLine add_to_log($book->course, 'course', 'update mod', '../mod/book/view.php?id='.$context->instanceid, 'book '.$book->id);
-    $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
+    $fs->delete_area_files($context->id, 'mod_book', 'wordimporttemp', 0);
 
     // Update the revision flag - this takes a long time, better to refetch the current value.
     $book = $DB->get_record('book', array('id' => $book->id));
     $DB->set_field('book', 'revision', $book->revision + 1, array('id' => $book->id));
+}
+
+/**
+ * Extract the WordProcessingML XML files from the .docx file, and use a sequence of XSLT
+ * steps to convert it into XHTML files
+ *
+ * @param string $package Word file package, now unzipped into its component files
+ * @param int $usercontextid ID of draft file area where images should be stored
+ * @param int $draftitemid ID of particular group in draft file area where images should be stored
+ * @return array XHTML content extracted from Word file and split into files
+ */
+function toolbook_wordimport_convert_to_xhtml_files($package, $usercontextid, $splitonsubheadings, $draftitemid) {
+    return;
+}
+
+/**
+ * Extract the WordProcessingML XML files from the .docx file, and use a sequence of XSLT
+ * steps to convert it into XHTML files
+ *
+ * @param string $filename Word file
+ * @param bool $splitonsubheadings split file by 'Heading 2' style into separate HTML chunks
+ * @param array $imagesforzipping array to store embedded image files
+ * @return array XHTML content extracted from Word file and split into files
+ */
+function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$imagesforzipping) {
+    global $CFG;
+
+    $word2xmlstylesheet1 = __DIR__ . "/wordml2xhtmlpass1.xsl"; // Convert WordML into basic XHTML.
+    $word2xmlstylesheet2 = __DIR__ . "/wordml2xhtmlpass2.xsl"; // Refine basic XHTML into Word-compatible XHTML.
+
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": filename = \"{$filename}\"", DEBUG_WORDIMPORT);
+    // Check that we can unzip the Word .docx file into its component files.
+    $zipres = zip_open($filename);
+    if (!is_resource($zipres)) {
+        // Cannot unzip file.
+        toolbook_wordimport_debug_unlink($filename);
+        throw new moodle_exception('cannotunzipfile', 'error');
+    }
+
+    // Check that XSLT is installed.
+    if (!class_exists('XSLTProcessor') || !function_exists('xslt_create')) {
+        // PHP extension 'xsl' is required for this action.
+        throw new moodle_exception(get_string('extensionrequired', 'tool_xmldb', 'xsl'));
+    }
+
+    // Give XSLT as much memory as possible, to enable larger Word files to be imported.
+    raise_memory_limit(MEMORY_HUGE);
+
+    if (!file_exists($word2xmlstylesheet1)) {
+        // XSLT stylesheet to transform WordML into XHTML is missing.
+        throw new moodle_exception('filemissing', 'moodle', $word2xmlstylesheet1);
+    }
+
+    // Set common parameters for all XSLT transformations.
+    $parameters = array (
+        'moodle_language' => current_language(),
+        'moodle_textdirection' => (right_to_left()) ? 'rtl' : 'ltr',
+        'heading1stylelevel' => '1',
+        'pluginname' => 'toolbook_wordimport', // Include plugin name to control image data handling inside XSLT.
+        'debug_flag' => DEBUG_WORDIMPORT
+    );
+
+    // Pre-XSLT preparation: merge the WordML and image content from the .docx Word file into one large XML file.
+    // Initialise an XML string to use as a wrapper around all the XML files.
+    $xmldeclaration = '<?xml version="1.0" encoding="UTF-8"?>';
+    $wordmldata = $xmldeclaration . "\n<pass1Container>\n";
+
+    $zipentry = zip_read($zipres);
+    while ($zipentry) {
+        if (!zip_entry_open($zipres, $zipentry, "r")) {
+            // Can't read the XML file from the Word .docx file.
+            zip_close($zipres);
+            throw new moodle_exception('errorunzippingfiles', 'error');
+        }
+
+        $zefilename = zip_entry_name($zipentry);
+        $zefilesize = zip_entry_filesize($zipentry);
+
+        // Insert internal images into the Zip file.
+        if (strpos($zefilename, "media")) {
+            // @codingStandardsIgnoreLine $imageformat = substr($zefilename, strrpos($zefilename, ".") + 1);
+            $imagedata = zip_entry_read($zipentry, $zefilesize);
+            $imagename = basename($zefilename);
+            $imagesuffix = strtolower(substr(strrchr($zefilename, "."), 1));
+            // GIF, PNG, JPG and JPEG handled OK, but bmp and other non-Internet formats are not.
+            if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpg' or $imagesuffix == 'jpeg') {
+                $imagesforzipping[$imagename] = $imagedata;
+                debugging(__FUNCTION__ . ":" . __LINE__ . ": added \"{$imagename}\" to Zip file", DEBUG_WORDIMPORT);
+            } else {
+                debugging(__FUNCTION__ . ":" . __LINE__ . ": ignore unsupported media file $zefilename" .
+                    " = $imagename, imagesuffix = $imagesuffix", DEBUG_WORDIMPORT);
+            }
+        } else {
+            // Look for required XML files, read and wrap it, remove the XML declaration, and add it to the XML string.
+            // Read and wrap XML files, remove the XML declaration, and add them to the XML string.
+            $xmlfiledata = preg_replace('/<\?xml version="1.0" ([^>]*)>/', "", zip_entry_read($zipentry, $zefilesize));
+            switch ($zefilename) {
+                case "word/document.xml":
+                    $wordmldata .= "<wordmlContainer>" . $xmlfiledata . "</wordmlContainer>\n";
+                    break;
+                case "docProps/core.xml":
+                    $wordmldata .= "<dublinCore>" . $xmlfiledata . "</dublinCore>\n";
+                    break;
+                case "docProps/custom.xml":
+                    $wordmldata .= "<customProps>" . $xmlfiledata . "</customProps>\n";
+                    break;
+                case "word/styles.xml":
+                    $wordmldata .= "<styleMap>" . $xmlfiledata . "</styleMap>\n";
+                    break;
+                case "word/_rels/document.xml.rels":
+                    $wordmldata .= "<documentLinks>" . $xmlfiledata . "</documentLinks>\n";
+                    break;
+                case "word/footnotes.xml":
+                    $wordmldata .= "<footnotesContainer>" . $xmlfiledata . "</footnotesContainer>\n";
+                    break;
+                case "word/_rels/footnotes.xml.rels":
+                    $wordmldata .= "<footnoteLinks>" . $xmlfiledata . "</footnoteLinks>\n";
+                    break;
+                /* @codingStandardsIgnoreStart
+                case "word/_rels/settings.xml.rels":
+                    $wordmldata .= "<settingsLinks>" . $xmlfiledata . "</settingsLinks>\n";
+                    break;
+                    @codingStandardsIgnoreEnd
+                */
+                default:
+                    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": Ignore $zefilename", DEBUG_WORDIMPORT);
+            }
+        }
+        // Get the next file in the Zip package.
+        $zipentry = zip_read($zipres);
+    }  // End while loop.
+    zip_close($zipres);
+
+    // Add images section and close the merged XML file.
+    // $wordmldata .= "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n";
+    $wordmldata .= "</pass1Container>";
+
+    // Pass 1 - convert WordML into linear XHTML.
+    // Create a temporary file to store the merged WordML XML content to transform.
+    $tempwordmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".wml";
+    if (($nbytes = file_put_contents($tempwordmlfilename, $wordmldata)) == 0) {
+        // Cannot save the file.
+        throw new moodle_exception('cannotsavefile', 'error', $tempwordmlfilename);
+    }
+
+    $xsltproc = xslt_create();
+    if (!($xsltoutput = xslt_process($xsltproc, $tempwordmlfilename, $word2xmlstylesheet1, null, null, $parameters))) {
+        // Transformation failed.
+        toolbook_wordimport_debug_unlink($tempwordmlfilename);
+        throw new moodle_exception('transformationfailed', 'toolbook_wordimport', $tempwordmlfilename);
+    }
+    toolbook_wordimport_debug_unlink($tempwordmlfilename);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 1 succeeded, XHTML output fragment = " .
+        str_replace("\n", "", substr($xsltoutput, 0, 200)), DEBUG_WORDIMPORT);
+
+    // Write output of Pass 1 to a temporary file, for use in Pass 2.
+    $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".if1";
+    if (($nbytes = file_put_contents($tempxhtmlfilename, $xsltoutput )) == 0) {
+        // Cannot save the file.
+        throw new moodle_exception('cannotsavefile', 'error', $tempxhtmlfilename);
+    }
+
+    // Pass 2 - tidy up linear XHTML a bit.
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": XSLT Pass 2 using \"" . $word2xmlstylesheet2 . "\"", DEBUG_WORDIMPORT);
+    if (!($xsltoutput = xslt_process($xsltproc, $tempxhtmlfilename, $word2xmlstylesheet2, null, null, $parameters))) {
+        // Transformation failed.
+        toolbook_wordimport_debug_unlink($tempxhtmlfilename);
+        throw new moodle_exception('transformationfailed', 'toolbook_wordimport', $tempxhtmlfilename);
+    }
+    toolbook_wordimport_debug_unlink($tempxhtmlfilename);
+
+    // Strip out superfluous namespace declarations on paragraph elements, which Moodle 2.7+ on Windows seems to throw in.
+    $xsltoutput = str_replace('<p xmlns="http://www.w3.org/1999/xhtml"', '<p', $xsltoutput);
+    $xsltoutput = str_replace(' xmlns=""', '', $xsltoutput);
+    // Remove 'mml:' prefix from child MathML element and attributes for compatibility with MathJax.
+    $xsltoutput = str_replace('<mml:', '<', $xsltoutput);
+    $xsltoutput = str_replace('</mml:', '</', $xsltoutput);
+    $xsltoutput = str_replace(' mathvariant="normal"', '', $xsltoutput);
+    $xsltoutput = str_replace(' xmlns:mml="http://www.w3.org/1998/Math/MathML"', '', $xsltoutput);
+    $xsltoutput = str_replace('<math>', '<math xmlns="http://www.w3.org/1998/Math/MathML">', $xsltoutput);
+
+    // Keep the converted XHTML file for debugging if developer debugging enabled.
+    if (debugging(null, DEBUG_WORDIMPORT)) {
+        $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".xhtml";
+        file_put_contents($tempxhtmlfilename, $xsltoutput);
+    }
+
+    return $xsltoutput;
+}   // End function convert_to_xhtml.
+
+/**
+ * Delete temporary files if debugging disabled
+ *
+ * @param string $filename name of file to be deleted
+ * @return void
+ */
+function toolbook_wordimport_debug_unlink($filename) {
+    if (DEBUG_WORDIMPORT == 0) {
+        unlink($filename);
+    }
 }

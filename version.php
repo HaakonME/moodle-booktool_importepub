@@ -17,8 +17,7 @@
 /**
  * Import Microsoft Word version file.
  *
- * @package    booktool
- * @subpackage wordimport
+ * @package    booktool_wordimport
  * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

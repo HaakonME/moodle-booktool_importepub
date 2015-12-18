@@ -17,8 +17,7 @@
 /**
  * Import EPUB import chapter function.
  *
- * @package    booktool
- * @subpackage wordimport
+ * @package    booktool_wordimport
  * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -65,8 +64,7 @@ require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'import_form.php');
 $PAGE->set_title($book->name);
 $PAGE->set_heading($course->fullname);
 
-$mform = new booktool_wordimport_form(null, array('id' => $id,
-                                                  'chapterid' => $chapterid));
+$mform = new booktool_wordimport_form(null, array('id' => $id, 'chapterid' => $chapterid));
 
 if ($mform->is_cancelled()) {
     if (empty($chapter->id)) {
@@ -81,8 +79,7 @@ if ($mform->is_cancelled()) {
     $fs = get_file_storage();
     $draftid = file_get_submitted_draft_itemid('importfile');
     $usercontext = context_user::instance($USER->id);
-    if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft',
-                                      $draftid, 'id DESC', false)) {
+    if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftid, 'id DESC', false)) {
         redirect($PAGE->url);
     }
     // Only 1 file can be uploaded at a time, so the $files array has 1 element.
@@ -90,8 +87,7 @@ if ($mform->is_cancelled()) {
     $splitonsubheadings = property_exists($data, 'splitonsubheadings');
     toolbook_wordimport_import_word($file, $book, $context, $splitonsubheadings);
 
-    echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php',
-                                                 array('id' => $id)));
+    echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php', array('id' => $id)));
     echo $OUTPUT->footer();
     die;
 } else {
