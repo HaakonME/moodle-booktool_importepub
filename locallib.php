@@ -63,8 +63,8 @@ function toolbook_wordimport_update_book_title($data, $title) {
  * @param bool $splitonsubheadings
  * @param bool $verbose
  */
-function toolbook_wordimport_import_word($package, $book, $context, $splitonsubheadings, $verbose = false) {
-    global $CFG, $OUTPUT, $USER;
+function toolbook_wordimport_import_word($package, $book, $context, $splitonsubheadings) {
+    global $OUTPUT, $USER;
 
     if (!$tmpfilename = $package->copy_content_to_temp()) {
         // Cannot save file.
@@ -91,12 +91,8 @@ function toolbook_wordimport_import_word($package, $book, $context, $splitonsubh
         }
     }
 
-
-
     // Split the single HTML file into multiple chapters based on h1 elements.
     $sectionmatches = null;
-    $chapterfilenames = array();
-    $chapternames = array();
     $foundsectionmatches = preg_match('~(.+)<h1[^>]*?>~is', $htmlcontent, $sectionmatches);
     $nummatches = count($sectionmatches);
     debugging(__FUNCTION__ . ":" . __LINE__ . ": found: {$foundsectionmatches}; num = {$nummatches}", DEBUG_WORDIMPORT);
@@ -114,17 +110,18 @@ function toolbook_wordimport_import_word($package, $book, $context, $splitonsubh
             // Get the heading text and create a HTML wrapper around the content, adding a title element.
             $sectioncontent = $sectionmatches[$i];
             preg_match('~<h1[^>]*>(.+)</h1>~is', $sectioncontent, $h1title);
-            $htmlfilecontent = "<html><head><title>" . substr($h1title[1], 0, 100) . "</title></head><body>" . $sectioncontent . "</body></html>";
+            $htmlfilecontent = "<html><head><title>" . substr($h1title[1], 0, 100) . 
+                "</title></head><body>" . $sectioncontent . "</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
 
-            debugging(__FUNCTION__ . ":" . __LINE__ . ": h1 ({$chapfilename}) = \"" . substr($h1title[1], 0, 100) . "\"", DEBUG_WORDIMPORT);
+            debugging(__FUNCTION__ . ":" . __LINE__ . ": h1 ({$chapfilename}) = \"" . 
+                substr($h1title[1], 0, 100) . "\"", DEBUG_WORDIMPORT);
         }
     } else {
         // No headings, so just add 1 HTML file to the Zip file.
         $zipfile->addFromString("index.htm", $htmlcontent);
     }
     $zipfile->close();
-
 
     $fs = get_file_storage();
     // Prepare filerecord array for creating each new image file.
@@ -141,7 +138,7 @@ function toolbook_wordimport_import_word($package, $book, $context, $splitonsubh
     $fileinfo['filename'] = basename($zipfilename);
     $fs->create_file_from_pathname($fileinfo, $zipfilename);
     // Delete the uploaded Word file.
-    // toolbook_wordimport_delete_files($context);
+    // @codingStandardsIgnoreLine toolbook_wordimport_delete_files($context);
     echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'), 'notifysuccess');
 
     // Use the default importhtml code to import the converted Word file.
