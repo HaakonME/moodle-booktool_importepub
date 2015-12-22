@@ -15,18 +15,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB import chapter function.
+ * Import Word file into book.
  *
  * @package    booktool_wordimport
  * @copyright  2015 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/* This file contains code based on mod/book/tool/print/index.php
- * and mod/book/tool/importhtml/index.php
- * (copyright 2004-2011 Petr Skoda) from Moodle 2.4. */
-
 require(dirname(__FILE__).'/../../../../config.php');
+require_once(dirname(__FILE__).'/locallib.php');
+require_once(dirname(__FILE__).'/import_form.php');
 
 $id        = required_param('id', PARAM_INT);           // Course Module ID.
 $chapterid = optional_param('chapterid', 0, PARAM_INT); // Chapter ID.
@@ -39,13 +37,10 @@ $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
 require_course_login($course, true, $cm);
 
 $context = context_module::instance($cm->id);
-require_capability('mod/book:edit', $context);
 require_capability('booktool/wordimport:import', $context);
+require_capability('mod/book:edit', $context);
 
-/*
-if (!(property_exists($USER, 'editing') and $USER->editing)) {
-}
-*/
+$PAGE->set_url('/mod/book/tool/wordimport/index.php', array('id' => $id, 'chapterid' => $chapterid));
 
 if ($chapterid) {
     if (!$chapter = $DB->get_record('book_chapters', array('id' => $chapterid, 'bookid' => $book->id))) {
@@ -55,27 +50,24 @@ if ($chapterid) {
     $chapter = false;
 }
 
-$PAGE->set_url('/mod/book/tool/wordimport/index.php',
-               array('id' => $id, 'chapterid' => $chapterid));
-
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'locallib.php');
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'import_form.php');
-
 $PAGE->set_title($book->name);
 $PAGE->set_heading($course->fullname);
 
 $mform = new booktool_wordimport_form(null, array('id' => $id, 'chapterid' => $chapterid));
 
+// If data submitted, then process and store.
 if ($mform->is_cancelled()) {
     if (empty($chapter->id)) {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id");
     } else {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
+
 } else if ($data = $mform->get_data()) {
     // A Word file has been uploaded, so process it.
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('importchapters', 'booktool_wordimport'));
+    echo $OUTPUT->heading($book->name);
+    echo $OUTPUT->heading(get_string('importchapters', 'booktool_wordimport'), 3);
 
     // Should the Word file split into subchapters on 'Heading 2' styles?
     $splitonsubheadings = property_exists($data, 'splitonsubheadings');
@@ -83,11 +75,9 @@ if ($mform->is_cancelled()) {
     // Get the uploaded Word file and save it to the file system.
     $fs = get_file_storage();
     $draftid = file_get_submitted_draft_itemid('importfile');
-    $usercontext = context_user::instance($USER->id);
-    if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftid, 'id DESC', false)) {
+    if (!$files = $fs->get_area_files(context_user::instance($USER->id)->id, 'user', 'draft', $draftid, 'id DESC', false)) {
         redirect($PAGE->url);
     }
-    // Only 1 file can be uploaded at a time, so the $files array has 1 element.
     $file = reset($files);
 
     // Save the file to a temporary location on the file system.
@@ -102,13 +92,10 @@ if ($mform->is_cancelled()) {
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php', array('id' => $id)));
     echo $OUTPUT->footer();
     die;
-} else {
+}
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('importchapters', 'booktool_wordimport'));
+    echo $OUTPUT->heading($book->name);
 
     $mform->display();
 
     echo $OUTPUT->footer();
-}
-
-

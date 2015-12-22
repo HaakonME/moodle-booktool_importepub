@@ -41,18 +41,6 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4.
     }
 }
 
-/**
- * Update title of book module
- *
- * @param object $data
- * @param string $title
- */
-function toolbook_wordimport_update_book_title($data, $title) {
-    $data->name = substr($title, 0, 250);
-    $data->intro = '<p>' . htmlentities($title, ENT_COMPAT, 'UTF-8') . '</p>';
-    $data->introformat = 1;
-    book_update_instance($data, null);
-}
 
 /**
  * Import HTML pages from a Word file
@@ -85,9 +73,31 @@ function toolbook_wordimport_import_word($wordfilename, $book, $context, $splito
             $zipfile->addFromString($imagename, $imagedata);
         }
     }
+    $zipfile->addFromString("index0000.htm", $htmlcontent);
 
-    // Add the HTML content to the Zip file.
-    $zipfile->addFromString('index.htm', $htmlcontent);
+    // Split the single HTML file into multiple chapters based on h1 elements.
+    $sectionmatches = null;
+    preg_match_all('#<h1>(.+?)</h1>(.+?)#is', $htmlcontent, $sectionmatches);
+    $nummatches = count($sectionmatches);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": num = {$nummatches}", DEBUG_WORDIMPORT);
+        debugging(__FUNCTION__ . ":" . __LINE__ . ": found sections ", DEBUG_WORDIMPORT);
+    // Create a separate HTML file in the Zip file for each section of content.
+    for ($i = 0; $i < $nummatches; $i++) {
+        $h1title = $sectionmatches[1][$i];
+        // Assign a filename and save the heading.
+        $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
+
+        // Get the heading text and create a HTML wrapper around the content, adding a title element.
+        $sectioncontent = $sectionmatches[2][$i];
+        debugging(__FUNCTION__ . ":" . __LINE__ . ": pattern 1: {$i}; h1title = " . $h1title, DEBUG_WORDIMPORT);
+        // debugging(__FUNCTION__ . ":" . __LINE__ . ": pattern 1: {$i}; text = " . str_replace("\n", "", substr($sectionmatches[1][$i], 0, 100)), DEBUG_WORDIMPORT);
+        // debugging(__FUNCTION__ . ":" . __LINE__ . ": pattern 2: {$i}; " . str_replace("\n", "", substr($sectionmatches[2][$i], 0, 100)), DEBUG_WORDIMPORT);
+        //preg_match('~<h1[^>]*>(.+)</h1>~is', $sectioncontent, $h1title);
+        // debugging(__FUNCTION__ . ":" . __LINE__ . ": chunk: {$i}; title = \"" . $h1title . "\"", DEBUG_WORDIMPORT);
+        $htmlfilecontent = "<html><head><title>" . $h1title .
+            "</title></head><body>" . $sectioncontent . "</body></html>";
+        $zipfile->addFromString($chapfilename, $htmlfilecontent);
+    }
     $zipfile->close();
 
     // Add the Zip file to the file storage area.
@@ -127,7 +137,7 @@ function toolbook_wordimport_delete_files($context) {
  * @param string $filename Word file
  * @param bool $splitonsubheadings split file by 'Heading 2' style into separate HTML chunks
  * @param array $imagesforzipping array to store embedded image files
- * @return array XHTML content extracted from Word file and split into files
+ * @return string XHTML content extracted from Word file and split into files
  */
 function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$imagesforzipping) {
     global $CFG;
@@ -285,6 +295,9 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     $xsltoutput = str_replace(' xmlns:mml="http://www.w3.org/1998/Math/MathML"', '', $xsltoutput);
     $xsltoutput = str_replace('<math>', '<math xmlns="http://www.w3.org/1998/Math/MathML">', $xsltoutput);
 
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 2 succeeded, XHTML output fragment = " .
+        str_replace("\n", "", substr($xsltoutput, 500, 2000)), DEBUG_WORDIMPORT);
+
     // Keep the converted XHTML file for debugging if developer debugging enabled.
     if (debugging(null, DEBUG_WORDIMPORT)) {
         $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".xhtml";
@@ -292,7 +305,7 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     }
 
     return $xsltoutput;
-}   // End function convert_to_xhtml.
+}   // End function toolbook_wordimport_convert_to_xhtml.
 
 /**
  * Delete temporary files if debugging disabled
