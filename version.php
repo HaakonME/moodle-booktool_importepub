@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import Microsoft Word version file.
+ * Import Microsoft Word file into book version information
  *
  * @package    booktool_wordimport
  * @copyright  2015 Eoin Campbell
@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2015121500;
+$plugin->version = 2015122200;
 $plugin->requires = 2012062500;
 $plugin->component = 'booktool_wordimport';
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.0.1';
+$plugin->release = '0.0.2';

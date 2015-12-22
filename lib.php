@@ -50,8 +50,7 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
     }
 
     if (!(has_capability('booktool/wordimport:import', $PAGE->cm->context) and
-          has_capability('mod/book:edit', $PAGE->cm->context) and
-          property_exists($USER, 'editing') and $USER->editing)) {
+          has_capability('mod/book:edit', $PAGE->cm->context))) {
         return;
     }
 

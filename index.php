@@ -73,9 +73,11 @@ if ($mform->is_cancelled()) {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
 } else if ($data = $mform->get_data()) {
+    // A Word file has been uploaded, so process it.
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('importchapters', 'booktool_wordimport'));
 
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": Book id: {$id}, Chapter id: {$chapterid}", DEBUG_WORDIMPORT);
     $fs = get_file_storage();
     $draftid = file_get_submitted_draft_itemid('importfile');
     $usercontext = context_user::instance($USER->id);
@@ -84,8 +86,55 @@ if ($mform->is_cancelled()) {
     }
     // Only 1 file can be uploaded at a time, so the $files array has 1 element.
     $file = reset($files);
+
+    // Should the Word file split into subchapters on 'Heading 2' styles?
     $splitonsubheadings = property_exists($data, 'splitonsubheadings');
-    toolbook_wordimport_import_word($file, $book, $context, $splitonsubheadings);
+
+    // Save the file to a temporary location on the file system.
+    if (!$tmpfilename = $file->copy_content_to_temp()) {
+        // Cannot save file.
+        throw new moodle_exception(get_string('errorcreatingfile', 'error', $package->get_filename()));
+    }
+
+    // Convert the Word file content into XHTML and an array of images.
+    $imagesforzipping = array();
+    $htmlcontent = toolbook_wordimport_convert_to_xhtml($tmpfilename, $splitonsubheadings, $imagesforzipping);
+
+    // Create a temporary Zip file to store the HTML and images for feeding to import function.
+    $zipfilename = dirname($tmpfilename) . DIRECTORY_SEPARATOR . basename($tmpfilename, ".tmp") . ".zip";
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": HTML Zip file: {$zipfilename}, Word file: {$tmpfilename}", DEBUG_WORDIMPORT);
+
+    $zipfile = new ZipArchive;
+    if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
+        // Cannot open zip file.
+        throw new moodle_exception('cannotopenzip', 'error');
+    }
+
+    // Add any images to the Zip file.
+    if (count($imagesforzipping) > 0) {
+        foreach ($imagesforzipping as $imagename => $imagedata) {
+            $zipfile->addFromString($imagename, $imagedata);
+        }
+    }
+
+    // Add the HTML content to the Zip file.
+    $zipfile->addFromString('index.htm', $htmlcontent);
+    $zipfile->close();
+
+    // Add the Zip file to the file storage area.
+    $zipfilerecord = array(
+        'contextid' => $usercontext->id,
+        'component' => 'user',
+        'filearea' => 'draft',
+        'itemid' => $book->revision,
+        'filepath' => "/",
+        'filename' => basename($zipfilename)
+        );
+    $zipfile = $fs->create_file_from_pathname($zipfilerecord, $zipfilename);
+
+    // Call the standard HTML import function to really import the content.
+    // Argument 2, value 2 = Each HTML file represents 1 chapter.
+    toolbook_importhtml_import_chapters($zipfile, 2, $book, $context);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php', array('id' => $id)));
     echo $OUTPUT->footer();
@@ -98,3 +147,5 @@ if ($mform->is_cancelled()) {
 
     echo $OUTPUT->footer();
 }
+
+

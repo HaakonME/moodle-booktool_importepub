@@ -382,6 +382,8 @@
         </xsl:attribute>
     </xsl:template>
 
+<xsl:template match="x:imageLinks|x:imagesContainer|x:styleMap|x:hyperLinks"/>
+
 <!-- Include debugging information in the output -->
 <xsl:template name="debugComment">
     <xsl:param name="comment_text"/>
