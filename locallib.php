@@ -57,26 +57,22 @@ function toolbook_wordimport_update_book_title($data, $title) {
 /**
  * Import HTML pages from a Word file
  *
- * @param stored_file $package Word file
+ * @param string $filename Word file
  * @param stdClass $book
  * @param context_module $context
  * @param bool $splitonsubheadings
- * @param bool $verbose
  */
-function toolbook_wordimport_import_word($package, $book, $context, $splitonsubheadings) {
+function toolbook_wordimport_import_word($wordfilename, $book, $context, $splitonsubheadings) {
     global $OUTPUT, $USER;
 
-    if (!$tmpfilename = $package->copy_content_to_temp()) {
-        // Cannot save file.
-        throw new moodle_exception(get_string('errorcreatingfile', 'error', $package->get_filename()));
-    }
-    // Process the Word file into a HTML file and images.
+    // Convert the Word file content into XHTML and an array of images.
     $imagesforzipping = array();
-    $htmlcontent = toolbook_wordimport_convert_to_xhtml($tmpfilename, $splitonsubheadings, $imagesforzipping);
+    $htmlcontent = toolbook_wordimport_convert_to_xhtml($wordfilename, $splitonsubheadings, $imagesforzipping);
 
     // Create a temporary Zip file to store the HTML and images for feeding to import function.
-    $zipfilename = dirname($tmpfilename) . DIRECTORY_SEPARATOR . basename($tmpfilename, ".tmp") . ".zip";
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": HTML Zip file: {$zipfilename}, Word file: {$tmpfilename}", DEBUG_WORDIMPORT);
+    $zipfilename = dirname($wordfilename) . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".zip";
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": HTML Zip file: {$zipfilename}, Word file: {$wordfilename}", DEBUG_WORDIMPORT);
+
     $zipfile = new ZipArchive;
     if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
         // Cannot open zip file.
@@ -86,63 +82,30 @@ function toolbook_wordimport_import_word($package, $book, $context, $splitonsubh
     // Add any images to the Zip file.
     if (count($imagesforzipping) > 0) {
         foreach ($imagesforzipping as $imagename => $imagedata) {
-            debugging(__FUNCTION__ . ":" . __LINE__ . ": image: {$imagename}", DEBUG_WORDIMPORT);
             $zipfile->addFromString($imagename, $imagedata);
         }
     }
 
-    // Split the single HTML file into multiple chapters based on h1 elements.
-    $sectionmatches = null;
-    $foundsectionmatches = preg_match('~(.+)<h1[^>]*?>~is', $htmlcontent, $sectionmatches);
-    $nummatches = count($sectionmatches);
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": found: {$foundsectionmatches}; num = {$nummatches}", DEBUG_WORDIMPORT);
-    if ($foundsectionmatches and $foundsectionmatches != 0) {
-        // Get the 1st chunk of HTML before the 1st h1 element.
-        preg_match('~(.+)<h1[^>]*?>~is', $htmlcontent, $startmatches);
-        $chapfilename = "chap" . sprintf("%04d", 0) . ".htm";
-        $zipfile->addFromString($chapfilename, $startmatches[1]);
-
-        // Create a separate HTML file in the Zip file for each section of content.
-        for ($i = 0; $i < $nummatches; $i++) {
-            // Assign a filename and save the heading.
-            $chapfilename = "chap" . sprintf("%04d", $i) . ".htm";
-
-            // Get the heading text and create a HTML wrapper around the content, adding a title element.
-            $sectioncontent = $sectionmatches[$i];
-            preg_match('~<h1[^>]*>(.+)</h1>~is', $sectioncontent, $h1title);
-            $htmlfilecontent = "<html><head><title>" . substr($h1title[1], 0, 100) .
-                "</title></head><body>" . $sectioncontent . "</body></html>";
-            $zipfile->addFromString($chapfilename, $htmlfilecontent);
-
-            debugging(__FUNCTION__ . ":" . __LINE__ . ": h1 ({$chapfilename}) = \"" .
-                substr($h1title[1], 0, 100) . "\"", DEBUG_WORDIMPORT);
-        }
-    } else {
-        // No headings, so just add 1 HTML file to the Zip file.
-        $zipfile->addFromString("index.htm", $htmlcontent);
-    }
+    // Add the HTML content to the Zip file.
+    $zipfile->addFromString('index.htm', $htmlcontent);
     $zipfile->close();
 
+    // Add the Zip file to the file storage area.
     $fs = get_file_storage();
-    // Prepare filerecord array for creating each new image file.
-    $fileinfo = array(
+    $zipfilerecord = array(
         'contextid' => $context->id,
         'component' => 'user',
         'filearea' => 'draft',
-        'userid' => $USER->id,
-        'itemid' => $package->get_itemid(),
-        'filepath' => '/',
-        'filename' => ''
+        'itemid' => $book->revision,
+        'filepath' => "/",
+        'filename' => basename($zipfilename)
         );
+    $zipfile = $fs->create_file_from_pathname($zipfilerecord, $zipfilename);
 
-    $fileinfo['filename'] = basename($zipfilename);
-    $fs->create_file_from_pathname($fileinfo, $zipfilename);
-    // Delete the uploaded Word file.
-    // @codingStandardsIgnoreLine toolbook_wordimport_delete_files($context);
-    echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'), 'notifysuccess');
+    // Call the standard HTML import function to really import the content.
+    // Argument 2, value 2 = Each HTML file represents 1 chapter.
+    toolbook_importhtml_import_chapters($zipfile, 2, $book, $context);
 
-    // Use the default importhtml code to import the converted Word file.
-    return toolbook_importhtml_import_chapters($package, 2, $book, $context);
 }
 
 
