@@ -86,11 +86,9 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
     $sectionmatches = null;
     preg_match_all('#<h1>(.*)</h1>#is', $htmlcontent, $h1matches);
     $nsections = count($h1matches[0]);
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": html = " . substr(str_replace("\n", "", $htmlcontent), strpos($htmlcontent, '<div class="level1">') - 20), DEBUG_WORDIMPORT);
     debugging(__FUNCTION__ . ":" . __LINE__ . ": nsections = {$nsections}", DEBUG_WORDIMPORT);
-    // Grab contents of each section (using a separate match for the last section).
+    // Grab contents of each section (except the last section).
     preg_match_all('#</h1>(.*)<h1>#is', $htmlcontent, $sectionmatches);
-    preg_match('#</h1>(.+)</body>#is', $htmlcontent, $sectionlast);
 
     // Create a separate HTML file in the Zip file for each section of content.
     for ($i = 0; $i < $nsections; $i++) {
@@ -123,7 +121,6 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
         "</title></head><body>" . $lastsectioncontent . "</body></html>";
     $zipfile->addFromString($chapfilename, $htmlfilecontent);
 
-    
     $zipfile->close();
 
     // Add the Zip file to the file storage area.
