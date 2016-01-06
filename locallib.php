@@ -36,6 +36,11 @@ require_once($CFG->dirroot.'/mod/book/locallib.php');
 require_once($CFG->dirroot.'/mod/book/tool/importhtml/locallib.php');
 
 if (!function_exists('create_module')) {        // Moodle <= 2.4.
+    /**
+     * Define dummy create_module function for Moodle 2.3
+     *
+     * @return null
+     */
     function create_module($data) {
         return null;
     }
@@ -45,17 +50,18 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4.
 /**
  * Import HTML pages from a Word file
  *
- * @param string $filename Word file
+ * @param string $wordfilename Word file
  * @param stdClass $book
  * @param context_module $context
  * @param bool $splitonsubheadings
+ * @return void
  */
-function toolbook_wordimport_import_word($wordfilename, $book, $context, $splitonsubheadings) {
+function booktool_wordimport_import_word($wordfilename, $book, $context, $splitonsubheadings) {
     global $OUTPUT, $USER;
 
     // Convert the Word file content into XHTML and an array of images.
     $imagesforzipping = array();
-    $htmlcontent = toolbook_wordimport_convert_to_xhtml($wordfilename, $splitonsubheadings, $imagesforzipping);
+    $htmlcontent = booktool_wordimport_convert_to_xhtml($wordfilename, $splitonsubheadings, $imagesforzipping);
 
     // Create a temporary Zip file to store the HTML and images for feeding to import function.
     $zipfilename = dirname($wordfilename) . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".zip";
@@ -76,28 +82,48 @@ function toolbook_wordimport_import_word($wordfilename, $book, $context, $splito
     $zipfile->addFromString("index0000.htm", $htmlcontent);
 
     // Split the single HTML file into multiple chapters based on h1 elements.
+    $h1matches = null;
     $sectionmatches = null;
-    preg_match_all('#<h1>(.+?)</h1>(.+?)#is', $htmlcontent, $sectionmatches);
-    $nummatches = count($sectionmatches);
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": num = {$nummatches}", DEBUG_WORDIMPORT);
-        debugging(__FUNCTION__ . ":" . __LINE__ . ": found sections ", DEBUG_WORDIMPORT);
-    // Create a separate HTML file in the Zip file for each section of content.
-    for ($i = 0; $i < $nummatches; $i++) {
-        $h1title = $sectionmatches[1][$i];
-        // Assign a filename and save the heading.
-        $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
+    preg_match_all('#<h1>(.*)</h1>#is', $htmlcontent, $h1matches);
+    $nsections = count($h1matches[0]);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": html = " . substr(str_replace("\n", "", $htmlcontent), strpos($htmlcontent, '<div class="level1">') - 20), DEBUG_WORDIMPORT);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": nsections = {$nsections}", DEBUG_WORDIMPORT);
+    // Grab contents of each section (using a separate match for the last section).
+    preg_match_all('#</h1>(.*)<h1>#is', $htmlcontent, $sectionmatches);
+    preg_match('#</h1>(.+)</body>#is', $htmlcontent, $sectionlast);
 
-        // Get the heading text and create a HTML wrapper around the content, adding a title element.
-        $sectioncontent = $sectionmatches[2][$i];
-        debugging(__FUNCTION__ . ":" . __LINE__ . ": pattern 1: {$i}; h1title = " . $h1title, DEBUG_WORDIMPORT);
-        // debugging(__FUNCTION__ . ":" . __LINE__ . ": pattern 1: {$i}; text = " . str_replace("\n", "", substr($sectionmatches[1][$i], 0, 100)), DEBUG_WORDIMPORT);
-        // debugging(__FUNCTION__ . ":" . __LINE__ . ": pattern 2: {$i}; " . str_replace("\n", "", substr($sectionmatches[2][$i], 0, 100)), DEBUG_WORDIMPORT);
-        //preg_match('~<h1[^>]*>(.+)</h1>~is', $sectioncontent, $h1title);
-        // debugging(__FUNCTION__ . ":" . __LINE__ . ": chunk: {$i}; title = \"" . $h1title . "\"", DEBUG_WORDIMPORT);
-        $htmlfilecontent = "<html><head><title>" . $h1title .
-            "</title></head><body>" . $sectioncontent . "</body></html>";
-        $zipfile->addFromString($chapfilename, $htmlfilecontent);
+    // Create a separate HTML file in the Zip file for each section of content.
+    for ($i = 0; $i < $nsections; $i++) {
+        $sectiontitle = $h1matches[0][$i];
+        $sectioncontent = $sectionmatches[1][$i];
+        debugging(__FUNCTION__ . ":" . __LINE__ . ": h1matches[1][{$i}]: " . $h1matches[1][$i], DEBUG_WORDIMPORT);
+
+        if ($splitonsubheadings) {
+            // Save each section as a HTML file.
+            $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
+            $htmlfilecontent = "<html><head><title>" . $sectiontitle .
+                "</title></head><body>" . $sectioncontent . "</body></html>";
+            $zipfile->addFromString($chapfilename, $htmlfilecontent);
+        } else {
+            // Save each section as a HTML file.
+            $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
+            $htmlfilecontent = "<html><head><title>" . $sectiontitle .
+                "</title></head><body>" . $sectioncontent . "</body></html>";
+            $zipfile->addFromString($chapfilename, $htmlfilecontent);
+        }
     }
+
+    // Add the last section.
+    $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
+    $lasth1offset = strripos($htmlcontent, "</h1>") + 5;
+    $endbodyoffset = stripos($htmlcontent, "</div></body>");
+    $lastsectionlength = $endbodyoffset - $lasth1offset;
+    $lastsectioncontent = substr($htmlcontent, $lasth1offset, $lastsectionlength);
+    $htmlfilecontent = "<html><head><title>" . $h1matches[0][$i] .
+        "</title></head><body>" . $lastsectioncontent . "</body></html>";
+    $zipfile->addFromString($chapfilename, $htmlfilecontent);
+
+    
     $zipfile->close();
 
     // Add the Zip file to the file storage area.
@@ -124,7 +150,7 @@ function toolbook_wordimport_import_word($wordfilename, $book, $context, $splito
  *
  * @param context_module $context
  */
-function toolbook_wordimport_delete_files($context) {
+function booktool_wordimport_delete_files($context) {
     $fs = get_file_storage();
     $fs->delete_area_files($context->id, 'mod_book', 'wordimporttemp', 0);
 }
@@ -139,7 +165,7 @@ function toolbook_wordimport_delete_files($context) {
  * @param array $imagesforzipping array to store embedded image files
  * @return string XHTML content extracted from Word file and split into files
  */
-function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$imagesforzipping) {
+function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$imagesforzipping) {
     global $CFG;
 
     $word2xmlstylesheet1 = __DIR__ . "/wordml2xhtmlpass1.xsl"; // Convert WordML into basic XHTML.
@@ -150,7 +176,7 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     $zipres = zip_open($filename);
     if (!is_resource($zipres)) {
         // Cannot unzip file.
-        toolbook_wordimport_debug_unlink($filename);
+        booktool_wordimport_debug_unlink($filename);
         throw new moodle_exception('cannotunzipfile', 'error');
     }
 
@@ -173,7 +199,7 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
         'moodle_language' => current_language(),
         'moodle_textdirection' => (right_to_left()) ? 'rtl' : 'ltr',
         'heading1stylelevel' => '1',
-        'pluginname' => 'toolbook_wordimport', // Include plugin name to control image data handling inside XSLT.
+        'pluginname' => 'booktool_wordimport', // Include plugin name to control image data handling inside XSLT.
         'debug_flag' => DEBUG_WORDIMPORT
     );
 
@@ -262,10 +288,10 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     $xsltproc = xslt_create();
     if (!($xsltoutput = xslt_process($xsltproc, $tempwordmlfilename, $word2xmlstylesheet1, null, null, $parameters))) {
         // Transformation failed.
-        toolbook_wordimport_debug_unlink($tempwordmlfilename);
-        throw new moodle_exception('transformationfailed', 'toolbook_wordimport', $tempwordmlfilename);
+        booktool_wordimport_debug_unlink($tempwordmlfilename);
+        throw new moodle_exception('transformationfailed', 'booktool_wordimport', $tempwordmlfilename);
     }
-    toolbook_wordimport_debug_unlink($tempwordmlfilename);
+    booktool_wordimport_debug_unlink($tempwordmlfilename);
     debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 1 succeeded, XHTML output fragment = " .
         str_replace("\n", "", substr($xsltoutput, 0, 200)), DEBUG_WORDIMPORT);
 
@@ -280,10 +306,10 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     debugging(__FUNCTION__ . ":" . __LINE__ . ": XSLT Pass 2 using \"" . $word2xmlstylesheet2 . "\"", DEBUG_WORDIMPORT);
     if (!($xsltoutput = xslt_process($xsltproc, $tempxhtmlfilename, $word2xmlstylesheet2, null, null, $parameters))) {
         // Transformation failed.
-        toolbook_wordimport_debug_unlink($tempxhtmlfilename);
-        throw new moodle_exception('transformationfailed', 'toolbook_wordimport', $tempxhtmlfilename);
+        booktool_wordimport_debug_unlink($tempxhtmlfilename);
+        throw new moodle_exception('transformationfailed', 'booktool_wordimport', $tempxhtmlfilename);
     }
-    toolbook_wordimport_debug_unlink($tempxhtmlfilename);
+    booktool_wordimport_debug_unlink($tempxhtmlfilename);
 
     // Strip out superfluous namespace declarations on paragraph elements, which Moodle 2.7+ on Windows seems to throw in.
     $xsltoutput = str_replace('<p xmlns="http://www.w3.org/1999/xhtml"', '<p', $xsltoutput);
@@ -305,7 +331,7 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     }
 
     return $xsltoutput;
-}   // End function toolbook_wordimport_convert_to_xhtml.
+}   // End function booktool_wordimport_convert_to_xhtml.
 
 /**
  * Delete temporary files if debugging disabled
@@ -313,7 +339,7 @@ function toolbook_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
  * @param string $filename name of file to be deleted
  * @return void
  */
-function toolbook_wordimport_debug_unlink($filename) {
+function booktool_wordimport_debug_unlink($filename) {
     if (DEBUG_WORDIMPORT == 0) {
         unlink($filename);
     }

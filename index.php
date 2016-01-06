@@ -87,7 +87,7 @@ if ($mform->is_cancelled()) {
     }
 
     // Convert the Word file content and import it into the book.
-    toolbook_wordimport_import_word($tmpfilename, $book, $context, $splitonsubheadings);
+    booktool_wordimport_import_word($tmpfilename, $book, $context, $splitonsubheadings);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php', array('id' => $id)));
     echo $OUTPUT->footer();
