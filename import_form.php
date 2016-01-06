@@ -30,8 +30,20 @@ defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->libdir . DIRECTORY_SEPARATOR . 'formslib.php');
 
+/**
+ * Importer for Microsoft Word books.
+ *
+ * @copyright 2016 Eoin Campbell
+ * @author Eoin Campbell
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (5)
+ */
 class booktool_wordimport_form extends moodleform {
 
+    /**
+     * Define Word import form
+     *
+     * @return void
+     */
     public function definition() {
         $mform = $this->_form;
         $data  = $this->_customdata;
@@ -61,6 +73,11 @@ class booktool_wordimport_form extends moodleform {
         $this->set_data($data);
     }
 
+    /**
+     * Define Word import form validation
+     *
+     * @return array
+     */
     public function validation($data, $files) {
         global $USER;
 
