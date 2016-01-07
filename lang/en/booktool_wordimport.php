@@ -18,7 +18,7 @@
  * Import Word file language strings.
  *
  * @package    booktool_wordimport
- * @copyright  2015 Eoin Campbell
+ * @copyright  2016 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

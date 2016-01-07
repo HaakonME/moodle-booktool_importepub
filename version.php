@@ -18,17 +18,17 @@
  * Import Microsoft Word file into book version information
  *
  * @package    booktool_wordimport
- * @copyright  2015 Eoin Campbell
+ * @copyright  2016 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016010601;
+$plugin->version = 2016010701;
 $plugin->requires = 2012062500;
 $plugin->component = 'booktool_wordimport';
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.1.0 (Build: 20160106)';
+$plugin->release = '0.9.0 (Build: 20160107)';
 
 $plugin->dependencies = array(
     'booktool_importhtml'     => 2012061700,

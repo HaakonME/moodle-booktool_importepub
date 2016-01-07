@@ -18,8 +18,7 @@
  * Import Microsoft Word file form.
  *
  * @package    booktool_wordimport
- * @copyright  201 Eoin Campbell
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2016 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

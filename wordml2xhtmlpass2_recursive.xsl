@@ -18,7 +18,8 @@
  * XSLT stylesheet to transform rough XHTML derived from Word 2010 files into a more hierarchical format with divs wrapping each heading and table (question name and item)
  *
  * @package qformat_wordtable
- * @copyright 2016 Eoin Campbell
+ * @copyright 2010-2015 Eoin Campbell
+ * @author Eoin Campbell
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (5)
 -->
 
@@ -34,21 +35,6 @@
 
     <xsl:param name="debug_flag" select="0"/>
     <xsl:param name="course_id"/>
-    <xsl:param name="heading1stylelevel" select="3"/>
-
-    <!-- Figure out an offset by which to demote headings e.g. Heading 1  to H2, etc. -->
-    <!-- Use a system default, or a document-specific override -->
-    <xsl:variable name="moodleHeading1Level" select="/x:html/x:head/x:meta[@name = 'moodleHeading1Level']/@content"/>
-    <xsl:variable name="heading_demotion_offset">
-        <xsl:choose>
-        <xsl:when test="$moodleHeading1Level != ''">
-            <xsl:value-of select="$moodleHeading1Level - 1"/>
-        </xsl:when>
-        <xsl:otherwise>
-            <xsl:value-of select="$heading1stylelevel - 1"/>
-        </xsl:otherwise>
-        </xsl:choose>
-    </xsl:variable>
 
     <xsl:variable name="uppercase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
     <xsl:variable name="lowercase" select="'abcdefghijklmnopqrstuvwxyz'"/>
@@ -61,11 +47,6 @@
 
     <xsl:template match="/">
         <xsl:apply-templates/>
-        <xsl:if test="$debug_flag &gt;= 1">
-        <xsl:comment><xsl:value-of select="concat('system default: heading1stylelevel = ', $heading1stylelevel)"/></xsl:comment>
-        <xsl:comment><xsl:value-of select="concat('document override: moodleHeading1Level = ', $moodleHeading1Level)"/></xsl:comment>
-        <xsl:comment><xsl:value-of select="concat('heading_demotion_offset = ', $heading_demotion_offset)"/></xsl:comment>
-        </xsl:if>
     </xsl:template>
     
     <!-- Start: Identity transformation -->
@@ -84,13 +65,12 @@
     <xsl:template match="text()">
         <xsl:value-of select="translate(., '&#x2009;', '&#x202f;')"/>
     </xsl:template>
+    
+    <xsl:template match="@mathvariant"/>
 
     <!-- Remove empty class attributes -->
     <xsl:template match="@class[.='']"/>
     
-    <!-- Omit superfluous MathML markup attributes -->
-    <xsl:template match="@mathvariant"/>
-
     <!-- Remove redundant style information, retaining only borders and widths on table cells, and text direction in paragraphs-->
     <xsl:template match="@style[not(parent::x:table) and not(contains(., 'direction:'))]" priority="1"/>
 
@@ -250,24 +230,27 @@
         </xsl:copy>
     </xsl:template>
     
-    <!-- Demote Heading styles by the required amount -->
-    <xsl:template match="x:p[starts-with(@class, 'heading')]" priority="2">
-        <xsl:variable name="heading_level" select="substring-after(@class, 'heading')"/>
-        <xsl:variable name="computed_heading_level">
-            <xsl:choose>
-            <xsl:when test="$heading_level + $heading_demotion_offset &gt; 5">
-                <xsl:text>6</xsl:text>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:value-of select="$heading_level + $heading_demotion_offset"/>
-            </xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
+    <!-- Convert the Heading1 style into a <h1> element (i.e. book chapter) -->
+    <xsl:template match="x:p[@class = 'heading1']" priority="2">
+        <chapter>
+            <h1>
+                <xsl:apply-templates select="node()"/>
+            </h1>
+            <!-- Process following siblings until we hit another heading1 para -->
+            <xsl:apply-templates select="following-sibling::*[@class != 'heading1']" mode="chapterMode"/>
+        </chapter>
+    </xsl:template>
 
-        <xsl:variable name="heading_tag" select="concat('h', $computed_heading_level)"/>
-        <xsl:element name="{$heading_tag}">
-            <xsl:apply-templates select="node()"/>
-        </xsl:element>
+    <!-- Convert the Heading2 style into a <h2> element and wrap it and the following content into a book subchapter -->
+    <xsl:template match="x:p[@class = 'heading2']" priority="2" mode="chapterMode">
+        <section>
+            <h2>
+                <xsl:apply-templates select="node()"/>
+            </h2>
+
+            <!-- Process all following siblings until we hit a heading1 or heading2 para -->
+            <xsl:apply-templates select="following-sibling::*[@class != 'heading1' and @class != 'heading2']" mode="sectionMode"/>
+        </section>
     </xsl:template>
 
 <!-- Handle simple unnested lists, as long as they use the explicit "List Number" or "List Bullet" styles -->
@@ -348,6 +331,21 @@
         </p>
     </xsl:template>
 
+<xsl:template match="*" mode="chapterMode">
+    <xsl:copy>
+        <xsl:apply-templates/>
+    </xsl:copy>
+</xsl:template>
+
+<xsl:template match="*" mode="sectionMode">
+    <xsl:copy>
+        <xsl:apply-templates/>
+    </xsl:copy>
+</xsl:template>
+
+<xsl:template match="*"/>
+
+<xsl:template match="x:imageLinks|x:imagesContainer|x:styleMap|x:hyperlinks"/>
 
     <!-- Delete any temporary ToC Ids to enable differences to be checked more easily, reduce clutter -->
     <xsl:template match="x:a[starts-with(translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '_toc') and @class = 'bookmarkStart' and count(@*) =3 and not(node())]" priority="4"/>
@@ -380,8 +378,6 @@
             <xsl:value-of select="translate(., $uppercase, $lowercase)"/>
         </xsl:attribute>
     </xsl:template>
-
-<xsl:template match="x:imageLinks|x:imagesContainer|x:styleMap|x:hyperLinks"/>
 
 <!-- Include debugging information in the output -->
 <xsl:template name="debugComment">
