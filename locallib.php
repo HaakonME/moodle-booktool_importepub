@@ -62,7 +62,6 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
 
     // Create a temporary Zip file to store the HTML and images for feeding to import function.
     $zipfilename = dirname($wordfilename) . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".zip";
-
     $zipfile = new ZipArchive;
     if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
         // Cannot open zip file.
@@ -78,63 +77,67 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
 
     // Split the single HTML file into multiple chapters based on h1 elements.
     $h1matches = null;
-    $sectionmatches = null;
+    $chaptermatches = null;
     // Grab title and contents of each section.
-    $sectionmatches = preg_split('#<h1>.*</h1>#isU', $htmlcontent);
+    $chaptermatches = preg_split('#<h1>.*</h1>#isU', $htmlcontent);
     preg_match_all('#<h1>(.*)</h1>#i', $htmlcontent, $h1matches);
-    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": nchaptitles = " . count($h1matches[0]) .
-    // @codingStandardsIgnoreLine     ", n sectionmatches = " . count($sectionmatches), DEBUG_WORDIMPORT);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": n chapters = " . count($chaptermatches), DEBUG_WORDIMPORT);
+
+    // If no h1 elements are present, treat the whole file as a single chapter.
+    if (count($chaptermatches) == 1) {
+        $zipfile->addFromString("index.htm", $htmlcontent);
+    }
 
     // Create a separate HTML file in the Zip file for each section of content.
-    for ($i = 1; $i < count($sectionmatches); $i++) {
-        $sectiontitle = $h1matches[1][$i - 1];
-        $sectioncontent = $sectionmatches[$i];
+    for ($i = 1; $i < count($chaptermatches); $i++) {
+        $chaptitle = $h1matches[1][$i - 1];
+        $chapcontent = $chaptermatches[$i];
         $chapfilename = sprintf("index%02d.htm", $i);
-        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": sectiontitle: " . $sectiontitle, DEBUG_WORDIMPORT);
-        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": sectioncontent[{$i}]: " .
-        // @codingStandardsIgnoreLine     str_replace("\n", "", $sectioncontent), DEBUG_WORDIMPORT);
+        debugging(__FUNCTION__ . ":" . __LINE__ . ": chaptitle({$i}): {$chaptitle}", DEBUG_WORDIMPORT);
+        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chapcontent[{$i}]: " .
+        // @codingStandardsIgnoreLine     str_replace("\n", "", $chapcontent), DEBUG_WORDIMPORT);
 
         // Remove the closing HTML markup from the last section.
-        if ($i == (count($sectionmatches) - 1)) {
-            $sectioncontent = substr($sectioncontent, 0, strpos($sectioncontent, "</div></body>"));
+        if ($i == (count($chaptermatches) - 1)) {
+            $chapcontent = substr($chapcontent, 0, strpos($chapcontent, "</div></body>"));
         }
 
         if ($splitonsubheadings) {
             // Save each subsection as a separate HTML file with a '_sub.htm' suffix.
             $h2matches = null;
-            $subsectionmatches = null;
+            $subchaptermatches = null;
             // Grab title and contents of each subsection.
-            preg_match_all('#<h2>(.*)</h2>#i', $sectioncontent, $h2matches);
-            $subsectionmatches = preg_split('#<h2>.*</h2>#isU', $sectioncontent);
+            preg_match_all('#<h2>(.*)</h2>#i', $chapcontent, $h2matches);
+            $subchaptermatches = preg_split('#<h2>.*</h2>#isU', $chapcontent);
             $nsubtitles = count($h2matches[0]);
-            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": nsubtitles = {$nsubtitles}, n subsectionmatches = " . count($subsectionmatches), DEBUG_WORDIMPORT);
+            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": nsubtitles = {$nsubtitles}, n subsectionmatches = " . count($subchaptermatches), DEBUG_WORDIMPORT);
 
             // First save the initial chapter content.
-            $sectioncontent = $subsectionmatches[0];
-        $chapfilename = sprintf("index%02d_00.htm", $i);
-            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": sectioncontent({$chapfilename}): " .
-            // @codingStandardsIgnoreLine     str_replace("\n", "", $sectioncontent), DEBUG_WORDIMPORT);
-            $htmlfilecontent = "<html><head><title>{$sectiontitle}</title></head>" .
-                "<body>{$sectioncontent}</body></html>";
+            $chapcontent = $subchaptermatches[0];
+            $chapfilename = sprintf("index%02d_00.htm", $i);
+            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chapcontent({$chapfilename}): " .
+            // @codingStandardsIgnoreLine     str_replace("\n", "", $chapcontent), DEBUG_WORDIMPORT);
+            $htmlfilecontent = "<html><head><title>{$chaptitle}</title></head>" .
+                "<body>{$chapcontent}</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
 
             // Save each subsection to a separate file.
-            for ($j = 1; $j < count($subsectionmatches); $j++) {
-                $subsectiontitle = $h2matches[1][$j - 1];
-                $subsectioncontent = $subsectionmatches[$j];
+            for ($j = 1; $j < count($subchaptermatches); $j++) {
+                $subchaptitle = $h2matches[1][$j - 1];
+                $subchapcontent = $subchaptermatches[$j];
                 $subsectionfilename = sprintf("index%02d_%02d_sub.htm", $i, $j);
-                $htmlfilecontent = "<html><head><title>{$subsectiontitle}</title></head>" .
-                    "<body>{$subsectioncontent}</body></html>";
-                // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": subsectiontitle: " . $subsectiontitle, DEBUG_WORDIMPORT);
-                // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": subsectioncontent[{$j}]({$subsectionfilename}): " .
-                // @codingStandardsIgnoreLine     str_replace("\n", "", $subsectioncontent), DEBUG_WORDIMPORT);
+                $htmlfilecontent = "<html><head><title>{$subchaptitle}</title></head>" .
+                    "<body>{$subchapcontent}</body></html>";
+                debugging(__FUNCTION__ . ":" . __LINE__ . ": subchaptitle({$j}): {$subchaptitle}", DEBUG_WORDIMPORT);
+                // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": subchapcontent[{$j}]({$subsectionfilename}): " .
+                // @codingStandardsIgnoreLine     str_replace("\n", "", $subchapcontent), DEBUG_WORDIMPORT);
 
                 $zipfile->addFromString($subsectionfilename, $htmlfilecontent);
             }
         } else {
             // Save each section as a HTML file.
-            $htmlfilecontent = "<html><head><title>{$sectiontitle}</title></head>" .
-                "<body>{$sectioncontent}</body></html>";
+            $htmlfilecontent = "<html><head><title>{$chaptitle}</title></head>" .
+                "<body>{$chapcontent}</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
         }
     }
