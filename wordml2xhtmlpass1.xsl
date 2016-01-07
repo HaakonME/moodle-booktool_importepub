@@ -4770,6 +4770,10 @@
                 <!-- Dereference the reference ID field to get the file name, and map to the src attribute -->
                 <xsl:value-of select="$imagesContainer/file[@filename = $img_filename]"/>
             </xsl:when>
+            <xsl:when test="$img_rid != '' and $pluginname = 'booktool_wordimport'">
+                <!-- Dereference the reference ID field to get the file name, and map to the src attribute -->
+                <xsl:value-of select="substring-after($img_filename, '/')"/>
+            </xsl:when>
             <xsl:when test="$img_rid != ''">
                 <!-- Dereference the reference ID field to get the file name, and map to the src attribute -->
                 <xsl:value-of select="concat('data:', $imagesContainer/file[@filename = $img_filename]/@mime-type, ';base64,', $imagesContainer/file[@filename = $img_filename])"/>
