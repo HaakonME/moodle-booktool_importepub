@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-define('DEBUG_WORDIMPORT', 0);
+define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once(dirname(__FILE__).'/xslemulatexslt.inc');
@@ -62,6 +62,7 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
 
     // Create a temporary Zip file to store the HTML and images for feeding to import function.
     $zipfilename = dirname($wordfilename) . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".zip";
+
     $zipfile = new ZipArchive;
     if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
         // Cannot open zip file.
@@ -75,19 +76,23 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
         }
     }
 
-    $htmfilename = dirname($wordfilename) . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".htm";
     // Split the single HTML file into multiple chapters based on h1 elements.
     $h1matches = null;
     $sectionmatches = null;
     // Grab title and contents of each section.
     $sectionmatches = preg_split('#<h1>.*</h1>#isU', $htmlcontent);
     preg_match_all('#<h1>(.*)</h1>#i', $htmlcontent, $h1matches);
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": nchaptitles = " . count($h1matches[0]) .
+    // @codingStandardsIgnoreLine     ", n sectionmatches = " . count($sectionmatches), DEBUG_WORDIMPORT);
 
     // Create a separate HTML file in the Zip file for each section of content.
     for ($i = 1; $i < count($sectionmatches); $i++) {
         $sectiontitle = $h1matches[1][$i - 1];
         $sectioncontent = $sectionmatches[$i];
         $chapfilename = sprintf("index%02d.htm", $i);
+        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": sectiontitle: " . $sectiontitle, DEBUG_WORDIMPORT);
+        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": sectioncontent[{$i}]: " .
+        // @codingStandardsIgnoreLine     str_replace("\n", "", $sectioncontent), DEBUG_WORDIMPORT);
 
         // Remove the closing HTML markup from the last section.
         if ($i == (count($sectionmatches) - 1)) {
@@ -102,10 +107,13 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
             preg_match_all('#<h2>(.*)</h2>#i', $sectioncontent, $h2matches);
             $subsectionmatches = preg_split('#<h2>.*</h2>#isU', $sectioncontent);
             $nsubtitles = count($h2matches[0]);
+            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": nsubtitles = {$nsubtitles}, n subsectionmatches = " . count($subsectionmatches), DEBUG_WORDIMPORT);
 
             // First save the initial chapter content.
             $sectioncontent = $subsectionmatches[0];
-            $chapfilename = sprintf("index%02d_00.htm", $i);
+        $chapfilename = sprintf("index%02d_00.htm", $i);
+            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": sectioncontent({$chapfilename}): " .
+            // @codingStandardsIgnoreLine     str_replace("\n", "", $sectioncontent), DEBUG_WORDIMPORT);
             $htmlfilecontent = "<html><head><title>{$sectiontitle}</title></head>" .
                 "<body>{$sectioncontent}</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
@@ -117,6 +125,10 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
                 $subsectionfilename = sprintf("index%02d_%02d_sub.htm", $i, $j);
                 $htmlfilecontent = "<html><head><title>{$subsectiontitle}</title></head>" .
                     "<body>{$subsectioncontent}</body></html>";
+                // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": subsectiontitle: " . $subsectiontitle, DEBUG_WORDIMPORT);
+                // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": subsectioncontent[{$j}]({$subsectionfilename}): " .
+                // @codingStandardsIgnoreLine     str_replace("\n", "", $subsectioncontent), DEBUG_WORDIMPORT);
+
                 $zipfile->addFromString($subsectionfilename, $htmlfilecontent);
             }
         } else {
@@ -173,7 +185,7 @@ function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     $word2xmlstylesheet1 = __DIR__ . "/wordml2xhtmlpass1.xsl"; // Convert WordML into basic XHTML.
     $word2xmlstylesheet2 = __DIR__ . "/wordml2xhtmlpass2.xsl"; // Refine basic XHTML into Word-compatible XHTML.
 
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": filename = \"{$filename}\"", DEBUG_WORDIMPORT);
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": filename = \"{$filename}\"", DEBUG_WORDIMPORT);
     // Check that we can unzip the Word .docx file into its component files.
     $zipres = zip_open($filename);
     if (!is_resource($zipres)) {

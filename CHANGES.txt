@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2016/01/07    0.9.1     Re-instate some debugging to avoid errors.
 2016/01/07    0.9.0     Support subchapters using Heading 2 styles, and embedded images.
 2016/01/06    0.1.0     Support splitting Word files into chapters using Heading 1 style as delimiter.
-2015/12/22    0.0.2     Initial working version
+2015/12/22    0.0.2     Initial working version.
