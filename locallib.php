@@ -117,6 +117,7 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
 
             // First save the initial chapter content.
             $sectioncontent = $subsectionmatches[0];
+        $chapfilename = sprintf("index%04d_0000.htm", $i);
             debugging(__FUNCTION__ . ":" . __LINE__ . ": sectioncontent({$chapfilename}): " .
                 str_replace("\n", "", $sectioncontent), DEBUG_WORDIMPORT);
             $htmlfilecontent = "<html><head><title>{$sectiontitle}</title></head>" .
