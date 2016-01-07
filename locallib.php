@@ -79,48 +79,47 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
             $zipfile->addFromString($imagename, $imagedata);
         }
     }
-    $zipfile->addFromString("index0000.htm", $htmlcontent);
 
+
+    $htmfilename = dirname($wordfilename) . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".htm";
+    file_put_contents($htmfilename, $htmlcontent);
     // Split the single HTML file into multiple chapters based on h1 elements.
     $h1matches = null;
     $sectionmatches = null;
-    preg_match_all('#<h1>(.*)</h1>#is', $htmlcontent, $h1matches);
+    preg_match_all('#<h1>(.*)</h1>#i', $htmlcontent, $h1matches);
     $nsections = count($h1matches[0]);
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": nsections = {$nsections}", DEBUG_WORDIMPORT);
     // Grab contents of each section (except the last section).
-    preg_match_all('#</h1>(.*)<h1>#is', $htmlcontent, $sectionmatches);
-
+    // preg_match_all('#</h1>(.*)<h1>#isU', $htmlcontent, $sectionmatches);
+    $sectionmatches = preg_split('#<h1>.*</h1>#isU', $htmlcontent, null, PREG_SPLIT_DELIM_CAPTURE);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": nsections = {$nsections}, n sectionmatches = " . count($sectionmatches), DEBUG_WORDIMPORT);
     // Create a separate HTML file in the Zip file for each section of content.
-    for ($i = 0; $i < $nsections; $i++) {
-        $sectiontitle = $h1matches[0][$i];
-        $sectioncontent = $sectionmatches[1][$i];
-        debugging(__FUNCTION__ . ":" . __LINE__ . ": h1matches[1][{$i}]: " . $h1matches[1][$i], DEBUG_WORDIMPORT);
+    for ($i = 1; $i < count($sectionmatches); $i++) {
+        $sectiontitle = $h1matches[1][$i - 1];
+        $sectioncontent = $sectionmatches[$i];
+        debugging(__FUNCTION__ . ":" . __LINE__ . ": sectiontitle: " . $sectiontitle, DEBUG_WORDIMPORT);
+        debugging(__FUNCTION__ . ":" . __LINE__ . ": sectioncontent[{$i}]: " .
+            str_replace("\n", "", $sectioncontent), DEBUG_WORDIMPORT);
 
+        if ($i == $nsections) {
+            $sectioncontent = substr($sectioncontent, 0, strpos($sectioncontent, "</body>"));
+            debugging(__FUNCTION__ . ":" . __LINE__ . ": sectioncontent: " .
+                str_replace("\n", "", $sectioncontent), DEBUG_WORDIMPORT);
+        }
         if ($splitonsubheadings) {
             // Save each section as a HTML file.
-            $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
-            $htmlfilecontent = "<html><head><title>" . $sectiontitle .
-                "</title></head><body>" . $sectioncontent . "</body></html>";
+            $chapfilename = "index" . sprintf("%04d", $i) . ".htm";
+            $htmlfilecontent = "<html><head><title>{$sectiontitle}</title></head>" .
+                "<body>{$sectioncontent}</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
         } else {
             // Save each section as a HTML file.
-            $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
-            $htmlfilecontent = "<html><head><title>" . $sectiontitle .
-                "</title></head><body>" . $sectioncontent . "</body></html>";
+            $chapfilename = "index" . sprintf("%04d", $i) . ".htm";
+            $htmlfilecontent = "<html><head><title>{$sectiontitle}</title></head>" .
+                "<body>{$sectioncontent}</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
         }
+        file_put_contents(dirname($wordfilename) . DIRECTORY_SEPARATOR . $chapfilename, $htmlfilecontent);
     }
-
-    // Add the last section.
-    $chapfilename = "index" . sprintf("%04d", $i + 1) . ".htm";
-    $lasth1offset = strripos($htmlcontent, "</h1>") + 5;
-    $endbodyoffset = stripos($htmlcontent, "</div></body>");
-    $lastsectionlength = $endbodyoffset - $lasth1offset;
-    $lastsectioncontent = substr($htmlcontent, $lasth1offset, $lastsectionlength);
-    $htmlfilecontent = "<html><head><title>" . $h1matches[0][$i] .
-        "</title></head><body>" . $lastsectioncontent . "</body></html>";
-    $zipfile->addFromString($chapfilename, $htmlfilecontent);
-
     $zipfile->close();
 
     // Add the Zip file to the file storage area.
