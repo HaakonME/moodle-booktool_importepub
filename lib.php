@@ -54,9 +54,17 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
         return;
     }
 
-    $url = new moodle_url('/mod/book/tool/wordimport/index.php', array('id' => $PAGE->cm->id));
-    $node->add(get_string('importchapters', 'booktool_wordimport'), $url, navigation_node::TYPE_SETTING, null, null, null);
+    // Configure Import link, and pass in the current chapter in case the insert should happen here rather than at the end.
+    $url1 = new moodle_url('/mod/book/tool/wordimport/index.php', array('id' => $PAGE->cm->id, 'chapterid'=> $params['chapterid']));
+    $node->add(get_string('importchapters', 'booktool_wordimport'), $url1, navigation_node::TYPE_SETTING, null, null, 
+        new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));
 
-    // @codingStandardsIgnoreLine $url = new moodle_url('/mod/book/tool/wordimport/index.php?action=export', array('id' => $PAGE->cm->id));
-    // @codingStandardsIgnoreLine $node->add(get_string('exportchapters', 'booktool_wordimport'), $url, navigation_node::TYPE_SETTING, null, null, null);
+    // Configure Export links for book and current chapter.
+    $url2 = new moodle_url('/mod/book/tool/wordimport/index.php', array('id' => $PAGE->cm->id, 'action' => 'export'));
+    $node->add(get_string('exportbook', 'booktool_wordimport'), $url2, navigation_node::TYPE_SETTING, 
+            null, null, new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));
+
+    $url3 = new moodle_url('/mod/book/tool/wordimport/index.php', array('id' => $PAGE->cm->id, 'chapterid'=>$params['chapterid'], 'action' => 'export'));
+    $node->add(get_string('exportchapter', 'booktool_wordimport'), $url3, navigation_node::TYPE_SETTING, 
+            null, null, new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));
 }

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import EPUB library.
+ * Import/Export Microsoft Word files library.
  *
  * @package    booktool_wordimport
  * @copyright  2016 Eoin Campbell
@@ -42,7 +42,6 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4.
         return null;
     }
 }
-
 
 /**
  * Import HTML pages from a Word file
@@ -350,6 +349,209 @@ function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     return $xsltoutput;
 }   // End function booktool_wordimport_convert_to_xhtml.
 
+
+/**
+ * EXPORT OPERATIONS
+ */
+
+/**
+ * Convert the HTML from a book into Word-compatible XHTML format
+ *
+ * Use an XSLT script to do the job, as it is much easier to implement this,
+ * and Moodle sites are guaranteed to have an XSLT processor available (I think).
+ *
+ * @param array $chapters array of chapters from a book
+ * @return string Word-compatible XHTML text
+ */
+function booktool_wordimport_book_docfile( $chapters ) {
+    // Check that there is some content to convert into Word.
+    if (count($chapters) == 0) {
+        echo $OUTPUT->notification(get_string('nochapters', 'booktool_wordimport'));
+        return false;
+    }
+
+    $content = '';
+    foreach ($chapters as $chapter) {
+        $content .= $chapter->content;
+    }
+    return booktool_wordimport_postprocess($content);
+}   // End booktool_wordimport_book_docfile function.
+
+
+/**
+ * Convert the HTML from a chapter into Word-compatible XHTML format
+ *
+ * @param string $content the chapter to be exported
+ * @return string the contents of the chapter in Word-compatible XHTML
+ */
+function booktool_wordimport_chapter_docfile($content) {
+    return booktool_wordimport_postprocess($content);
+}   // End booktool_wordimport_chapter_docfile function.
+
+
+/**
+ * Convert the HTML into Word-compatible XHTML format
+ *
+ * Use an XSLT script to do the job, as it is much easier to implement this,
+ * and Moodle sites are guaranteed to have an XSLT processor available (I think).
+ *
+ * @param string $content all HTML content from a book
+ * @return string Word-compatible XHTML text
+ */
+function booktool_wordimport_postprocess( $content ) {
+    global $CFG, $USER, $COURSE, $OUTPUT;
+
+    /** @var string export template with Word-compatible CSS style definitions */
+    $wordfiletemplate = 'wordfiletemplate.html';
+    /** @var string Stylesheet to export XHTML into Word-compatible XHTML */
+    $xhtml2wordstylesheet2 = 'xhtml2wordpass2.xsl';
+
+
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . '($content = "' . str_replace("\n", "", substr($content, 80, 500)) . ' ...")', DEBUG_WORDIMPORT);
+
+    // XHTML template for Word file CSS styles formatting.
+    $htmltemplatefilepath = __DIR__ . "/" . $wordfiletemplate;
+    $stylesheet = __DIR__ . "/" . $xhtml2wordstylesheet2;
+
+    // Check that XSLT is installed, and the XSLT stylesheet and XHTML template are present.
+    if (!class_exists('XSLTProcessor') || !function_exists('xslt_create')) {
+        echo $OUTPUT->notification(get_string('xsltunavailable', 'booktool_wordimport'));
+        return false;
+    } else if (!file_exists($stylesheet)) {
+        // Stylesheet to transform Moodle Question XML into Word doesn't exist.
+        echo $OUTPUT->notification(get_string('stylesheetunavailable', 'booktool_wordimport', $stylesheet));
+        return false;
+    }
+
+    // Create a temporary file to store the XML content to transform.
+    if (!($tempxmlfilename = tempnam($CFG->dataroot . '/temp/', "b2w-"))) {
+        echo $OUTPUT->notification(get_string('cannotopentempfile', 'booktool_wordimport', basename($tempxmlfilename)));
+        return false;
+    }
+
+    // Maximise memory available so that very large files can be exported.
+    raise_memory_limit(MEMORY_HUGE);
+
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": content: " . substr(str_replace("\n", "", $content), 200), DEBUG_WORDIMPORT);
+    $cleancontent = clean_html_text($content);
+    debugging(__FUNCTION__ . ":" . __LINE__ . ": cleancontent: " . substr(str_replace("\n", "", $cleancontent), 200), DEBUG_WORDIMPORT);
+
+    // Write the XML contents to be transformed, and also include labels data, to avoid having to use document() inside XSLT.
+    $bookxhtml = "<container>\n<book>" . $cleancontent . "</book>\n</container>";
+    if (($nbytes = file_put_contents($tempxmlfilename, $bookxhtml)) == 0) {
+        echo $OUTPUT->notification(get_string('cannotwritetotempfile', 'booktool_wordimport', basename($tempxmlfilename)));
+        return false;
+    }
+
+    // Set parameters for XSLT transformation. Note that we cannot use $arguments though.
+    $parameters = array (
+        'course_id' => $COURSE->id,
+        'course_name' => $COURSE->fullname,
+        'author_name' => $USER->firstname . ' ' . $USER->lastname,
+        'moodle_country' => $USER->country,
+        'moodle_language' => current_language(),
+        'moodle_textdirection' => (right_to_left()) ? 'rtl' : 'ltr',
+        'moodle_release' => $CFG->release,
+        'moodle_url' => $CFG->wwwroot . "/",
+        'moodle_username' => $USER->username,
+        'debug_flag' => debugging('', DEBUG_WORDIMPORT),
+        'transformationfailed' => get_string('transformationfailed', 'booktool_wordimport', $xhtml2wordstylesheet2)
+    );
+
+    $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($tempxmlfilename, ".tmp") . ".xhtm";
+    // Write the intermediate (Pass 1) XHTML contents to be transformed in Pass 2, this time including the HTML template too.
+    $xhtmloutput = "<container>\n" . $bookxhtml . "\n<htmltemplate>\n" . file_get_contents($htmltemplatefilepath) .
+                 "\n</htmltemplate>\n</container>";
+    if (($nbytes = file_put_contents($tempxhtmlfilename, $xhtmloutput)) == 0) {
+        echo $OUTPUT->notification(get_string('cannotwritetotempfile', 'booktool_wordimport', basename($tempxhtmlfilename)));
+        return false;
+    }
+
+    // Prepare for Pass 2 XSLT transformation.
+    $stylesheet = __DIR__ . "/" . $xhtml2wordstylesheet2;
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": Run Pass 2 with stylesheet '$stylesheet'", DEBUG_WORDIMPORT);
+    $xsltproc = xslt_create();
+    if (!($xsltoutput = xslt_process($xsltproc, $tempxhtmlfilename, $stylesheet, null, null, $parameters))) {
+        echo $OUTPUT->notification(get_string('transformationfailed', 'booktool_wordimport', $stylesheet));
+        booktool_wordimport_debug_unlink($tempxhtmlfilename);
+        return false;
+    }
+    $xhtmlfragment = str_replace("\n", "", substr($xsltoutput, 400, 100));
+    booktool_wordimport_debug_unlink($tempxhtmlfilename);
+
+    // Strip out any redundant namespace attributes, which XSLT on Windows seems to add.
+    $xsltoutput = str_replace(' xmlns=""', '', $xsltoutput);
+    $xsltoutput = str_replace(' xmlns="http://www.w3.org/1999/xhtml"', '', $xsltoutput);
+    // Unescape double minuses if they were substituted during CDATA content clean-up.
+    $xsltoutput = str_replace("WORDIMPORTMinusMinus", "--", $xsltoutput);
+
+    // Strip off the XML declaration, if present, since Word doesn't like it.
+    if (strncasecmp($xsltoutput, "<?xml ", 5) == 0) {
+        $content = substr($xsltoutput, strpos($xsltoutput, "\n"));
+    } else {
+        $content = $xsltoutput;
+    }
+
+    return $content;
+}   // End booktool_wordimport_postprocess function.
+
+
+/**
+ * Clean HTML content
+ *
+ * A string containing clean XHTML is returned
+ *
+ * @param string $cdatastring XHTML from inside a CDATA_SECTION in a question text element
+ * @return string
+ */
+ function clean_html_text($cdatastring) {
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . "(cdatastring = \"" . substr($cdatastring, 0, 100) . "\")", DEBUG_WORDIMPORT);
+
+    // Escape double minuses, which cause XSLT processing to fail.
+    $cdatastring = str_replace("--", "WORDIMPORTMinusMinus", $cdatastring);
+
+    // Wrap the string in a HTML wrapper, load it into a new DOM document as HTML, but save as XML.
+    $doc = new DOMDocument();
+    $doc->loadHTML('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><html><body>' . $cdatastring . '</body></html>');
+    $doc->getElementsByTagName('html')->item(0)->setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+    $xml = $doc->saveXML();
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": xml: |" . substr(str_replace("\n", "", $xml), 250) . "|", DEBUG_WORDIMPORT);
+
+    $bodystart = stripos($xml, '<body>') + strlen('<body>');
+    $bodylength = strripos($xml, '</body>') - $bodystart;
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": bodystart = {$bodystart}, bodylength = {$bodylength}", DEBUG_WORDIMPORT);
+    if ($bodystart || $bodylength) {
+        $cleanxhtml = substr($xml, $bodystart, $bodylength);
+        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": clean xhtml: |" . $cleanxhtml . "|", DEBUG_WORDIMPORT);
+    } else {
+        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . "() -> Invalid XHTML, using original cdata string", DEBUG_WORDIMPORT);
+        $cleanxhtml = $cdatastring;
+    }
+
+    // Fix up filenames after @@PLUGINFILE@@ to replace URL-encoded characters with ordinary characters.
+    $foundpluginfilenames = preg_match_all('~(.*?)<img src="@@PLUGINFILE@@/([^"]*)(.*)~s', $cleanxhtml,
+                                $pluginfilematches, PREG_SET_ORDER);
+    $nummatches = count($pluginfilematches);
+    if ($foundpluginfilenames and $foundpluginfilenames != 0) {
+        $urldecodedstring = "";
+        // Process the possibly-URL-escaped filename so that it matches the name in the file element.
+        for ($i = 0; $i < $nummatches; $i++) {
+            // Decode the filename and add the surrounding text.
+            $decodedfilename = urldecode($pluginfilematches[$i][2]);
+            $urldecodedstring .= $pluginfilematches[$i][1] . '<img src="@@PLUGINFILE@@/' . $decodedfilename .
+                                    $pluginfilematches[$i][3];
+        }
+        $cleanxhtml = $urldecodedstring;
+    }
+
+    // Strip soft hyphens (0xAD, or decimal 173).
+    $cleanxhtml = preg_replace('/\xad/u', '', $cleanxhtml);
+
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . "() -> |" . str_replace("\n", "", substr($cleanxhtml, 0, 100)) . " ...|", DEBUG_WORDIMPORT);
+    return $cleanxhtml;
+}
+
+
 /**
  * Delete temporary files if debugging disabled
  *
@@ -357,7 +559,7 @@ function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
  * @return void
  */
 function booktool_wordimport_debug_unlink($filename) {
-    if (DEBUG_WORDIMPORT == 0) {
+    if (DEBUG_WORDIMPORT !== DEBUG_DEVELOPER or !(debugging(null, DEBUG_DEVELOPER))) {
         unlink($filename);
     }
 }

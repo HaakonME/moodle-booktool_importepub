@@ -28,6 +28,7 @@ require_once(dirname(__FILE__).'/import_form.php');
 
 $id        = required_param('id', PARAM_INT);           // Course Module ID.
 $chapterid = optional_param('chapterid', 0, PARAM_INT); // Chapter ID.
+$action = optional_param('action', 'import', PARAM_TEXT);
 
 // Security checks.
 $cm = get_coursemodule_from_id('book', $id, 0, false, MUST_EXIST);
@@ -39,6 +40,15 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('booktool/wordimport:import', $context);
 require_capability('mod/book:edit', $context);
+
+// Check all variables.
+if ($chapterid) {
+    // Single chapter printing - only visible!
+    $chapter = $DB->get_record('book_chapters', array('id'=>$chapterid, 'bookid'=>$book->id), '*', MUST_EXIST);
+} else {
+    // Complete book.
+    $chapter = false;
+}
 
 $PAGE->set_url('/mod/book/tool/wordimport/index.php', array('id' => $id, 'chapterid' => $chapterid));
 
@@ -57,12 +67,37 @@ $mform = new booktool_wordimport_form(null, array('id' => $id, 'chapterid' => $c
 
 // If data submitted, then process and store.
 if ($mform->is_cancelled()) {
+    // Form cancelled, go back.
     if (empty($chapter->id)) {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id");
     } else {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
+} else if ($action = 'export' and $chapter) {
+    // Export the current chapter into Word.
+    unset($id);
+    unset($chapterid);
 
+    if ($chapter->hidden) {
+        require_capability('mod/book:viewhiddenchapters', $context);
+    }
+
+    // Read the chapter HTML.
+    $chaptertext = file_rewrite_pluginfile_urls($chapter->content, 'pluginfile.php', $context->id, 'mod_book', 'chapter', $chapter->id);
+
+    $filecontent = booktool_wordimport_chapter_docfile($chaptertext);
+    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, array('filename' => clean_filename($book->name).'.doc'));
+    die;
+} else if ($action = 'export') {
+    // Export the whole book into Word.
+    unset($id);
+    unset($chapterid);
+
+    // Read all the chapters.
+    $chapters = book_preload_chapters($book);
+    $filecontent = booktool_wordimport_book_docfile($chapters);
+    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, array('filename' => clean_filename($book->name).'.doc'));
+    die;
 } else if ($data = $mform->get_data()) {
     // A Word file has been uploaded, so process it.
     echo $OUTPUT->header();
