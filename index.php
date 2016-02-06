@@ -58,7 +58,7 @@ if ($mform->is_cancelled()) {
     }
 } else if ($action == 'export' and $chapterid) {
     // Export the current chapter into Word.
-    $chapter = $DB->get_record('book_chapters', array('id'=>$chapterid, 'bookid'=>$book->id), '*', MUST_EXIST);
+    $chapter = $DB->get_record('book_chapters', array('id' => $chapterid, 'bookid' => $book->id), '*', MUST_EXIST);
     unset($id);
     unset($chapterid);
 
@@ -67,15 +67,17 @@ if ($mform->is_cancelled()) {
     }
 
     // Preprocess the chapter HTML.
-    $chaptertext = file_rewrite_pluginfile_urls($chapter->content, 'pluginfile.php', $context->id, 'mod_book', 'chapter', $chapter->id);
+    $chaptertext = file_rewrite_pluginfile_urls($chapter->content, 'pluginfile.php', $context->id,
+            'mod_book', 'chapter', $chapter->id);
     $chaptertext = "<html><body>" . $chaptertext . "</body></html>";
     // Postprocess the HTML to add a wrapper template, convert images into base64, etc.
     $filecontent = booktool_wordimport_postprocess("<h1>" . $chapter->title . "</h1>" . $chaptertext);
-    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, array('filename' => clean_filename($book->name).'.doc'));
+    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true,
+            array('filename' => clean_filename($book->name).'.doc'));
     die;
 } else if ($action == 'export') {
     // Export the whole book into Word.
-    $allchapters = $DB->get_records('book_chapters', array('bookid'=>$book->id), 'pagenum');
+    $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
     unset($id);
 
     // Read the title, introduction and all the chapters into a string.

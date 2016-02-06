@@ -413,7 +413,8 @@ function booktool_wordimport_postprocess( $content ) {
     );
 
     // Write the book contents and the HTML template to a file.
-    $xhtmloutput = "<container>\n<container><html xmlns='http://www.w3.org/1999/xhtml'><body>" . $cleancontent . "</body></html></container>\n<htmltemplate>\n" . 
+    $xhtmloutput = "<container>\n<container><html xmlns='http://www.w3.org/1999/xhtml'><body>" .
+            $cleancontent . "</body></html></container>\n<htmltemplate>\n" .
             file_get_contents($htmltemplatefilepath) . "\n</htmltemplate>\n</container>";
     if (($nbytes = file_put_contents($tempxhtmlfilename, $xhtmloutput)) == 0) {
         echo $OUTPUT->notification(get_string('cannotwritetotempfile', 'booktool_wordimport', basename($tempxhtmlfilename)));
@@ -456,7 +457,7 @@ function booktool_wordimport_postprocess( $content ) {
  * @param string $cdatastring XHTML from inside a CDATA_SECTION in a question text element
  * @return string
  */
- function clean_html_text($cdatastring) {
+function clean_html_text($cdatastring) {
     // Escape double minuses, which cause XSLT processing to fail.
     $cdatastring = str_replace("--", "WORDIMPORTMinusMinus", $cdatastring);
 
