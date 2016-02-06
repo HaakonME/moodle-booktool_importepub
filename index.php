@@ -37,32 +37,15 @@ $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
 
 require_course_login($course, true, $cm);
 
+// Should update capabilities to separate import and export permissions.
 $context = context_module::instance($cm->id);
 require_capability('booktool/wordimport:import', $context);
 require_capability('mod/book:edit', $context);
 
-// Check all variables.
-if ($chapterid) {
-    // Single chapter printing - only visible!
-    $chapter = $DB->get_record('book_chapters', array('id'=>$chapterid, 'bookid'=>$book->id), '*', MUST_EXIST);
-} else {
-    // Complete book.
-    $chapter = false;
-}
-
+// Set up page in case an import has been requested.
 $PAGE->set_url('/mod/book/tool/wordimport/index.php', array('id' => $id, 'chapterid' => $chapterid));
-
-if ($chapterid) {
-    if (!$chapter = $DB->get_record('book_chapters', array('id' => $chapterid, 'bookid' => $book->id))) {
-        $chapterid = 0;
-    }
-} else {
-    $chapter = false;
-}
-
 $PAGE->set_title($book->name);
 $PAGE->set_heading($course->fullname);
-
 $mform = new booktool_wordimport_form(null, array('id' => $id, 'chapterid' => $chapterid));
 
 // If data submitted, then process and store.
@@ -73,8 +56,9 @@ if ($mform->is_cancelled()) {
     } else {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
-} else if ($action = 'export' and $chapter) {
+} else if ($action == 'export' and $chapterid) {
     // Export the current chapter into Word.
+    $chapter = $DB->get_record('book_chapters', array('id'=>$chapterid, 'bookid'=>$book->id), '*', MUST_EXIST);
     unset($id);
     unset($chapterid);
 
@@ -82,20 +66,30 @@ if ($mform->is_cancelled()) {
         require_capability('mod/book:viewhiddenchapters', $context);
     }
 
-    // Read the chapter HTML.
+    // Preprocess the chapter HTML.
     $chaptertext = file_rewrite_pluginfile_urls($chapter->content, 'pluginfile.php', $context->id, 'mod_book', 'chapter', $chapter->id);
-
-    $filecontent = booktool_wordimport_chapter_docfile($chaptertext);
+    $chaptertext = "<html><body>" . $chaptertext . "</body></html>";
+    // Postprocess the HTML to add a wrapper template, convert images into base64, etc.
+    $filecontent = booktool_wordimport_postprocess("<h1>" . $chapter->title . "</h1>" . $chaptertext);
     send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, array('filename' => clean_filename($book->name).'.doc'));
     die;
-} else if ($action = 'export') {
+} else if ($action == 'export') {
     // Export the whole book into Word.
+    $allchapters = $DB->get_records('book_chapters', array('bookid'=>$book->id), 'pagenum');
     unset($id);
-    unset($chapterid);
 
-    // Read all the chapters.
-    $chapters = book_preload_chapters($book);
-    $filecontent = booktool_wordimport_book_docfile($chapters);
+    // Read the title, introduction and all the chapters into a string.
+    $booktext = "<html><body><p class='MsoTitle'>" . $book->name . "</p>";
+    $booktext .= file_rewrite_pluginfile_urls($book->intro, 'pluginfile.php', $context->id, 'mod_book', 'intro', null);
+    foreach ($allchapters as $chapter) {
+        // Check if the chapter title is duplicated inside the content, and include it if not.
+        if (!strpos($chapter->content, "<h1")) {
+            $booktext .= '<h1>' . $chapter->title . '</h1>';
+        }
+        $booktext .= $chapter->content;
+    }
+    $booktext .=  "</body></html>";
+    $filecontent = booktool_wordimport_postprocess($booktext);
     send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, array('filename' => clean_filename($book->name).'.doc'));
     die;
 } else if ($data = $mform->get_data()) {
