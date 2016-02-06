@@ -90,9 +90,10 @@ if ($mform->is_cancelled()) {
         }
         $booktext .= $chapter->content;
     }
-    $booktext .=  "</body></html>";
+    $booktext .= "</body></html>";
     $filecontent = booktool_wordimport_postprocess($booktext);
-    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, array('filename' => clean_filename($book->name).'.doc'));
+    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, 
+            array('filename' => clean_filename($book->name).'.doc'));
     die;
 } else if ($data = $mform->get_data()) {
     // A Word file has been uploaded, so process it.

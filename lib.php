@@ -50,22 +50,23 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
     }
 
     if (!(has_capability('booktool/wordimport:import', $PAGE->cm->context) and
-          has_capability('mod/book:edit', $PAGE->cm->context))) {
+        has_capability('mod/book:edit', $PAGE->cm->context))) {
         return;
     }
 
     // Configure Import link, and pass in the current chapter in case the insert should happen here rather than at the end.
-    $url1 = new moodle_url('/mod/book/tool/wordimport/index.php', array('id' => $PAGE->cm->id, 'chapterid' => $params['chapterid']));
-    $node->add(get_string('importchapters', 'booktool_wordimport'), $url1, navigation_node::TYPE_SETTING, null, null, 
-        new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));
+    $url1 = new moodle_url('/mod/book/tool/wordimport/index.php', 
+            array('id' => $PAGE->cm->id, 'chapterid' => $params['chapterid']));
+    $node->add(get_string('importchapters', 'booktool_wordimport'), $url1, navigation_node::TYPE_SETTING, null, null,
+            new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));
 
     // Configure Export links for book and current chapter.
     $url2 = new moodle_url('/mod/book/tool/wordimport/index.php', array('id' => $PAGE->cm->id, 'action' => 'export'));
-    $node->add(get_string('exportbook', 'booktool_wordimport'), $url2, navigation_node::TYPE_SETTING, 
+    $node->add(get_string('exportbook', 'booktool_wordimport'), $url2, navigation_node::TYPE_SETTING,
             null, null, new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));
 
-    $url3 = new moodle_url('/mod/book/tool/wordimport/index.php', 
+    $url3 = new moodle_url('/mod/book/tool/wordimport/index.php',
             array('id' => $PAGE->cm->id, 'chapterid' => $params['chapterid'], 'action' => 'export'));
-    $node->add(get_string('exportchapter', 'booktool_wordimport'), $url3, navigation_node::TYPE_SETTING, 
+    $node->add(get_string('exportchapter', 'booktool_wordimport'), $url3, navigation_node::TYPE_SETTING,
             null, null, new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));
 }
