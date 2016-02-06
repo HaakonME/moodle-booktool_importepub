@@ -375,11 +375,10 @@
     </xsl:template>
 
     <!-- Delete any temporary ToC Ids to enable differences to be checked more easily, reduce clutter -->
-    <xsl:template match="x:a[starts-with(translate(@name, $uppercase, $lowercase), '_toc') and @class = 'bookmarkStart' and count(@*) =3 and not(node())]" priority="4"/>
+    <xsl:template match="x:a[@class = 'bookmarkStart' and count(@*) = 3 and not(node())]" priority="4"/>
     <!-- Delete any spurious OLE_LINK bookmarks that Word inserts -->
-    <xsl:template match="x:a[starts-with(translate(@name, $uppercase, $lowercase), 'ole_link') and @class = 'bookmarkStart']" priority="4"/>
-    <xsl:template match="x:a[starts-with(translate(@name, $uppercase, $lowercase), '_goback') and @class = 'bookmarkStart']" priority="4"/>
-
+    <xsl:template match="x:a[starts-with(translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'ole_link') and @class = 'bookmarkStart']" priority="4"/>
+    <xsl:template match="x:a[starts-with(translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '_goback') and @class = 'bookmarkStart']" priority="4"/>
     <xsl:template match="x:a[@class='bookmarkEnd' and not(node())]" priority="2"/>
     <xsl:template match="x:a[@href='\* MERGEFORMAT']" priority="2"/>
 

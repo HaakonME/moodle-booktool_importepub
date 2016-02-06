@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2016/02/06    0.9.4     Handle Word 2013 and LibreOffice files better.
 2016/01/20    0.9.3     Clean up spans to omit default text colour, remove underline from links.
 2016/01/07    0.9.2     Handle case where Word file has no Heading 1 styles.
 2016/01/07    0.9.1     Re-instate some debugging to avoid errors.

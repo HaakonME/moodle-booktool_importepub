@@ -342,7 +342,7 @@ function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
         str_replace("\n", "", substr($xsltoutput, 500, 2000)), DEBUG_WORDIMPORT);
 
     // Keep the converted XHTML file for debugging if developer debugging enabled.
-    if (debugging(null, DEBUG_WORDIMPORT)) {
+    if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
         $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".xhtml";
         file_put_contents($tempxhtmlfilename, $xsltoutput);
     }

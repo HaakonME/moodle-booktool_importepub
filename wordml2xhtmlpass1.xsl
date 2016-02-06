@@ -3001,7 +3001,7 @@
         <xsl:param name="prsR" select="$prsRDefault"/>
 
         <xsl:if test="not(w:pPr/w:pStyle/@w:val='z-TopofForm') and not(w:pPr/w:pStyle/@w:val='z-BottomofForm')">
-            <xsl:value-of select="$debug_newline"/>
+            <xsl:value-of select="'&#x0a;'"/>
             <p>
 
                 <xsl:variable name="pStyleId">
