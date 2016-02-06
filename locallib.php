@@ -53,11 +53,9 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4.
  * @return void
  */
 function booktool_wordimport_import_word($wordfilename, $book, $context, $splitonsubheadings) {
-    global $OUTPUT, $USER;
-
     // Convert the Word file content into XHTML and an array of images.
     $imagesforzipping = array();
-    $htmlcontent = booktool_wordimport_convert_to_xhtml($wordfilename, $splitonsubheadings, $imagesforzipping);
+    $htmlcontent = booktool_wordimport_convert_to_xhtml($wordfilename, $imagesforzipping);
 
     // Create a temporary Zip file to store the HTML and images for feeding to import function.
     $zipfilename = dirname($wordfilename) . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".zip";
@@ -108,8 +106,6 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
             // Grab title and contents of each subsection.
             preg_match_all('#<h2>(.*)</h2>#i', $chapcontent, $h2matches);
             $subchaptermatches = preg_split('#<h2>.*</h2>#isU', $chapcontent);
-            $nsubtitles = count($h2matches[0]);
-            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": nsubtitles = {$nsubtitles}, n subsectionmatches = " . count($subchaptermatches), DEBUG_WORDIMPORT);
 
             // First save the initial chapter content.
             $chapcontent = $subchaptermatches[0];
@@ -181,7 +177,7 @@ function booktool_wordimport_delete_files($context) {
  * @param array $imagesforzipping array to store embedded image files
  * @return string XHTML content extracted from Word file and split into files
  */
-function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$imagesforzipping) {
+function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
     global $CFG;
 
     $word2xmlstylesheet1 = __DIR__ . "/wordml2xhtmlpass1.xsl"; // Convert WordML into basic XHTML.
@@ -296,7 +292,7 @@ function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
     // Pass 1 - convert WordML into linear XHTML.
     // Create a temporary file to store the merged WordML XML content to transform.
     $tempwordmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".wml";
-    if (($nbytes = file_put_contents($tempwordmlfilename, $wordmldata)) == 0) {
+    if ((file_put_contents($tempwordmlfilename, $wordmldata)) == 0) {
         // Cannot save the file.
         throw new moodle_exception('cannotsavefile', 'error', $tempwordmlfilename);
     }
@@ -313,7 +309,7 @@ function booktool_wordimport_convert_to_xhtml($filename, $splitonsubheadings, &$
 
     // Write output of Pass 1 to a temporary file, for use in Pass 2.
     $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".if1";
-    if (($nbytes = file_put_contents($tempxhtmlfilename, $xsltoutput )) == 0) {
+    if ((file_put_contents($tempxhtmlfilename, $xsltoutput )) == 0) {
         // Cannot save the file.
         throw new moodle_exception('cannotsavefile', 'error', $tempxhtmlfilename);
     }
@@ -365,14 +361,14 @@ function booktool_wordimport_postprocess( $content ) {
     /** @var string export template with Word-compatible CSS style definitions */
     $wordfiletemplate = 'wordfiletemplate.html';
     /** @var string Stylesheet to export XHTML into Word-compatible XHTML */
-    $xhtml2wordstylesheet2 = 'xhtml2wordpass2.xsl';
+    $exportstylesheet = 'xhtml2wordpass2.xsl';
 
 
     // @codingStandardsIgnoreLine debugging(__FUNCTION__ . '($content = "' . str_replace("\n", "", substr($content, 80, 500)) . ' ...")', DEBUG_WORDIMPORT);
 
     // XHTML template for Word file CSS styles formatting.
     $htmltemplatefilepath = __DIR__ . "/" . $wordfiletemplate;
-    $stylesheet = __DIR__ . "/" . $xhtml2wordstylesheet2;
+    $stylesheet = __DIR__ . "/" . $exportstylesheet;
 
     // Check that XSLT is installed, and the XSLT stylesheet and XHTML template are present.
     if (!class_exists('XSLTProcessor') || !function_exists('xslt_create')) {
@@ -409,27 +405,26 @@ function booktool_wordimport_postprocess( $content ) {
         'moodle_url' => $CFG->wwwroot . "/",
         'moodle_username' => $USER->username,
         'debug_flag' => debugging('', DEBUG_WORDIMPORT),
-        'transformationfailed' => get_string('transformationfailed', 'booktool_wordimport', $xhtml2wordstylesheet2)
+        'transformationfailed' => get_string('transformationfailed', 'booktool_wordimport', $exportstylesheet)
     );
 
     // Write the book contents and the HTML template to a file.
     $xhtmloutput = "<container>\n<container><html xmlns='http://www.w3.org/1999/xhtml'><body>" .
             $cleancontent . "</body></html></container>\n<htmltemplate>\n" .
             file_get_contents($htmltemplatefilepath) . "\n</htmltemplate>\n</container>";
-    if (($nbytes = file_put_contents($tempxhtmlfilename, $xhtmloutput)) == 0) {
+    if ((file_put_contents($tempxhtmlfilename, $xhtmloutput)) == 0) {
         echo $OUTPUT->notification(get_string('cannotwritetotempfile', 'booktool_wordimport', basename($tempxhtmlfilename)));
         return false;
     }
 
     // Prepare for Pass 2 XSLT transformation (Pass 1 not needed because books, unlike questions, are already HTML.
-    $stylesheet = __DIR__ . "/" . $xhtml2wordstylesheet2;
+    $stylesheet = __DIR__ . "/" . $exportstylesheet;
     $xsltproc = xslt_create();
     if (!($xsltoutput = xslt_process($xsltproc, $tempxhtmlfilename, $stylesheet, null, null, $parameters))) {
         echo $OUTPUT->notification(get_string('transformationfailed', 'booktool_wordimport', $stylesheet));
         booktool_wordimport_debug_unlink($tempxhtmlfilename);
         return false;
     }
-    $xhtmlfragment = str_replace("\n", "", substr($xsltoutput, 0, 400));
     booktool_wordimport_debug_unlink($tempxhtmlfilename);
 
     // Strip out any redundant namespace attributes, which XSLT on Windows seems to add.
