@@ -55,7 +55,7 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
     }
 
     // Configure Import link, and pass in the current chapter in case the insert should happen here rather than at the end.
-    $url1 = new moodle_url('/mod/book/tool/wordimport/index.php', 
+    $url1 = new moodle_url('/mod/book/tool/wordimport/index.php',
             array('id' => $PAGE->cm->id, 'chapterid' => $params['chapterid']));
     $node->add(get_string('importchapters', 'booktool_wordimport'), $url1, navigation_node::TYPE_SETTING, null, null,
             new pix_icon('f/document', '', 'moodle', array('class' => 'iconsmall', 'title' => '')));

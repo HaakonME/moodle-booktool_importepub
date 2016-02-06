@@ -92,7 +92,7 @@ if ($mform->is_cancelled()) {
     }
     $booktext .= "</body></html>";
     $filecontent = booktool_wordimport_postprocess($booktext);
-    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true, 
+    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true,
             array('filename' => clean_filename($book->name).'.doc'));
     die;
 } else if ($data = $mform->get_data()) {

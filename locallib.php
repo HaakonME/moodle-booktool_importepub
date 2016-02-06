@@ -363,7 +363,6 @@ function booktool_wordimport_postprocess( $content ) {
     /** @var string Stylesheet to export XHTML into Word-compatible XHTML */
     $exportstylesheet = 'xhtml2wordpass2.xsl';
 
-
     // @codingStandardsIgnoreLine debugging(__FUNCTION__ . '($content = "' . str_replace("\n", "", substr($content, 80, 500)) . ' ...")', DEBUG_WORDIMPORT);
 
     // XHTML template for Word file CSS styles formatting.
