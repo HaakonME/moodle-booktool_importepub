@@ -44,7 +44,7 @@
 
 <xsl:variable name="ucase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'" />
 <xsl:variable name="lcase" select="'abcdefghijklmnopqrstuvwxyz'" />
-<xsl:variable name="pluginfiles_string" select="'@@PLUGINFILE@@/'"/>
+<xsl:variable name="pluginfiles_string" select="'@@PLUGINFILE@@'"/>
 <xsl:variable name="embeddedimagedata_string" select="'data:image/'"/>
 <xsl:variable name="base64data_string" select="';base64,'"/>
 
@@ -355,7 +355,7 @@
         <xsl:when test="contains(@src, $pluginfiles_string)">
             <!-- Image exported from Moodle 2.x, i.e. 
                  <img src="@@PLUGINFILE@@/filename.gif"/> <file name="filename.gif" encoding="base64">{base64 data}</file> -->
-            <xsl:value-of select="substring-after(ancestor::htm:td//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ',')"/>
+            <xsl:value-of select="substring-after(ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ',')"/>
         </xsl:when>
         <xsl:when test="contains(@src, $embeddedimagedata_string)">
             <!-- Image embedded in text as it was imported using Word2MQXML, i.e. <img src="data:image/gif;base64,{base64 data}"/> -->
@@ -369,7 +369,7 @@
         <xsl:when test="contains(@src, $pluginfiles_string)">
             <!-- Image exported from Moodle 2.x, i.e. 
                  <img src="@@PLUGINFILE@@/filename.gif"/> <file name="filename.gif" encoding="base64">{base64 data}</file> -->
-            <xsl:value-of select="substring-after(substring-before(ancestor::htm:td//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ';'), 'data:image/')"/>
+            <xsl:value-of select="substring-after(substring-before(ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ';'), 'data:image/')"/>
         </xsl:when>
         <xsl:when test="contains(@src, $embeddedimagedata_string)">
             <!-- Image embedded in text as it was imported using Word2MQXML, i.e. <img src="data:image/gif;base64,{base64 data}"/> -->
@@ -381,7 +381,7 @@
     <xsl:variable name="image_encoding">
         <xsl:choose>
         <xsl:when test="contains(@src, $pluginfiles_string)">
-            <xsl:value-of select="substring-after(substring-before(ancestor::htm:td//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ','), ';')"/>
+            <xsl:value-of select="substring-after(substring-before(ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ','), ';')"/>
         </xsl:when>
         <xsl:otherwise> <!-- Always Base 64 -->
             <xsl:value-of select="'base64'"/>
@@ -419,8 +419,8 @@
         </xsl:choose>
     </xsl:variable>
 
-    <xsl:variable name="image_name" select="ancestor::htm:td//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@title"/>
-    <xsl:variable name="image_data" select="ancestor::htm:td//htm:div[@class = 'ImageFile']/htm:img/@src"/>
+    <xsl:variable name="image_name" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@title"/>
+    <xsl:variable name="image_data" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile']/htm:img/@src"/>
     <xsl:variable name="image_format" select="substring-before(substring-after('data:image/', $image_data), ';')"/>
     <xsl:variable name="image_encoding" select="substring-after(substring-before(',', $image_data), ';')"/>
 

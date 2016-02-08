@@ -67,7 +67,8 @@ if ($mform->is_cancelled()) {
     }
 
     // Include the book title at the top of the chapter.
-    $chaptertext = "<p class='MsoTitle'>" . $book->name . "</p>\n";
+    $chaptertext = '<p class="MsoTitle">' . $book->name . "</p>\n";
+    $chaptertext .= '<div class="chapter">';
 
     // Check if the chapter title is duplicated inside the content, and include it if not.
     if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
@@ -75,9 +76,10 @@ if ($mform->is_cancelled()) {
     } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
         $chaptertext .= "<h2>" . $chapter->title . "</h2>\n";
     }
-
+    $chaptertext .= $chapter->content;
     // Preprocess the chapter HTML to embed images.
-    $chaptertext .= booktool_wordimport_base64_images($chapter->content, $context->id, $chapter->id);
+    $chaptertext .= booktool_wordimport_base64_images($context->id, 'chapter', $chapter->id);
+    $chaptertext .= '</div>';
     // Postprocess the HTML to add a wrapper template and convert embedded images to a table.
     $chaptertext = booktool_wordimport_postprocess($chaptertext);
     $filename = clean_filename($book->name . '_chap' . sprintf("%02d", $chapter->pagenum)).'.doc';
@@ -88,21 +90,28 @@ if ($mform->is_cancelled()) {
     $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
     unset($id);
 
-    // Read the title, introduction and all the chapters into a string.
-    $booktext = "<html><body><p class='MsoTitle'>" . $book->name . "</p>";
-    $booktext .= file_rewrite_pluginfile_urls($book->intro, 'pluginfile.php', $context->id, 'mod_book', 'intro', null);
+    // Read the title and introduction into a string, embedding images.
+    $booktext = '<p class="MsoTitle">' . $book->name . "</p>\n";
+    $booktext .= '<div class="chapter">' . $book->intro;
+    $booktext .= booktool_wordimport_base64_images($context->id, 'intro');
+    $booktext .= "</div>\n";
 
+    // Append all the chapters to the end of the string, again embedding images.
     foreach ($allchapters as $chapter) {
+        $booktext .= '<div class="chapter">';
         // Check if the chapter title is duplicated inside the content, and include it if not.
-        if (!strpos($chapter->content, "<h1")) {
-            $booktext .= '<h1>' . $chapter->title . '</h1>';
+        if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
+            $booktext .= "<h1>" . $chapter->title . "</h1>\n";
+        } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
+            $booktext .= "<h2>" . $chapter->title . "</h2>\n";
         }
-        $booktext .= booktool_wordimport_base64_images($chapter->content, $context->id, $book->id, $chapter->id);
+        $booktext .= $chapter->content;
+        $booktext .= booktool_wordimport_base64_images($context->id, 'chapter', $chapter->id);
+        $booktext .= "</div>\n";
     }
-    $booktext .= "</body></html>";
-    $filecontent = booktool_wordimport_postprocess($booktext);
+    $booktext = booktool_wordimport_postprocess($booktext);
     $filename = clean_filename($book->name) . '.doc';
-    send_file($filecontent, $filename, 10, 0, true, array('filename' => $filename));
+    send_file($booktext, $filename, 10, 0, true, array('filename' => $filename));
     die;
 } else if ($data = $mform->get_data()) {
     // A Word file has been uploaded, so process it.

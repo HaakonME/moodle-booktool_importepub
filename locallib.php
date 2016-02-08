@@ -434,41 +434,45 @@ function booktool_wordimport_postprocess( $content ) {
  *
  * A string containing the HTML with embedded base64 images is returned
  *
- * @param string $content the HTML content of a book or chapter to be modified
  * @param string $contextid the context ID
- * @param string $contextid the chapter ID
+ * @param string $filearea filearea: chapter or intro
+ * @param string $chapterid the chapter ID (optional)
  * @return string the modified HTML with embedded images
  */
-function booktool_wordimport_base64_images($content, $contextid, $chapterid = null) {
+function booktool_wordimport_base64_images($contextid, $filearea, $chapterid = null) {
     // Get the list of files embedded in the book or chapter.
     // Note that this will break on images in the Book Intro section.
-
+    $imagestring = '';
     $fs = get_file_storage();
-    $files = $fs->get_area_files($contextid, 'mod_book', 'chapter', $chapterid);
+    if ($filearea == 'intro') {
+        $files = $fs->get_area_files($contextid, 'mod_book', $filearea);
+    } else {
+        $files = $fs->get_area_files($contextid, 'mod_book', $filearea, $chapterid);
+    }
     foreach ($files as $fileinfo) {
         // Process image files, converting them into Base64 encoding.
+        debugging(__FUNCTION__ . ": $filearea file: " . $fileinfo->get_filename(), DEBUG_WORDIMPORT);
         $fileext = strtolower(pathinfo($fileinfo->get_filename(), PATHINFO_EXTENSION));
         if ($fileext == 'png' or $fileext == 'jpg' or $fileext == 'jpeg' or $fileext == 'gif') {
             $filename = $fileinfo->get_filename();
             $filetype = ($fileext == 'jpg') ? 'jpeg' : $fileext;
             $fileitemid = $fileinfo->get_itemid();
             $filepath = $fileinfo->get_filepath();
-            $filedata = $fs->get_file($contextid, 'mod_book', 'chapter', $fileitemid, $filepath, $filename);
+            $filedata = $fs->get_file($contextid, 'mod_book', $filearea, $fileitemid, $filepath, $filename);
 
             if (!$filedata === false) {
                 $base64data = base64_encode($filedata->get_content());
                 $filedata = 'data:image/' . $filetype . ';base64,' . $base64data;
-
-                // Embed the image data into the HTML, and keep the original image name in a title attribute.
-                // Replace '<img src="@@PLUGINFILE@@/image.png"/> with '<img src="data:image/png;base64,..." title="image.png"/>.
-                $imgsrc = '@@PLUGINFILE@@' . $filepath . $filename;
-                // @codingStandardsIgnoreLine $content = str_replace($img_src, $filedata, $content);
-                $content = str_replace($imgsrc . '"', $filedata . '" title="' . $filename . '"', $content);
+                // Embed the image name and data into the HTML.
+                $imagestring = '<img title="' . $filepath . $filename . '" src="' . $filedata . '"/>';
             }
         }
     }
 
-    return $content;
+    if ($imagestring != '') {
+        return '<div class="ImageFile">' . $imagestring . '</div>';
+    }
+    return '';
 }
 
 
