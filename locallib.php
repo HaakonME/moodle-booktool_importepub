@@ -90,9 +90,6 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
         $chaptitle = $h1matches[1][$i - 1];
         $chapcontent = $chaptermatches[$i];
         $chapfilename = sprintf("index%02d.htm", $i);
-        debugging(__FUNCTION__ . ":" . __LINE__ . ": chaptitle({$i}): {$chaptitle}", DEBUG_WORDIMPORT);
-        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chapcontent[{$i}]: " .
-        // @codingStandardsIgnoreLine     str_replace("\n", "", $chapcontent), DEBUG_WORDIMPORT);
 
         // Remove the closing HTML markup from the last section.
         if ($i == (count($chaptermatches) - 1)) {
@@ -110,8 +107,6 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
             // First save the initial chapter content.
             $chapcontent = $subchaptermatches[0];
             $chapfilename = sprintf("index%02d_00.htm", $i);
-            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chapcontent({$chapfilename}): " .
-            // @codingStandardsIgnoreLine     str_replace("\n", "", $chapcontent), DEBUG_WORDIMPORT);
             $htmlfilecontent = "<html><head><title>{$chaptitle}</title></head>" .
                 "<body>{$chapcontent}</body></html>";
             $zipfile->addFromString($chapfilename, $htmlfilecontent);
@@ -123,10 +118,6 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
                 $subsectionfilename = sprintf("index%02d_%02d_sub.htm", $i, $j);
                 $htmlfilecontent = "<html><head><title>{$subchaptitle}</title></head>" .
                     "<body>{$subchapcontent}</body></html>";
-                debugging(__FUNCTION__ . ":" . __LINE__ . ": subchaptitle({$j}): {$subchaptitle}", DEBUG_WORDIMPORT);
-                // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": subchapcontent[{$j}]({$subsectionfilename}): " .
-                // @codingStandardsIgnoreLine     str_replace("\n", "", $subchapcontent), DEBUG_WORDIMPORT);
-
                 $zipfile->addFromString($subsectionfilename, $htmlfilecontent);
             }
         } else {
@@ -240,10 +231,7 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
             // GIF, PNG, JPG and JPEG handled OK, but bmp and other non-Internet formats are not.
             if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpg' or $imagesuffix == 'jpeg') {
                 $imagesforzipping[$imagename] = $imagedata;
-                debugging(__FUNCTION__ . ":" . __LINE__ . ": added \"{$imagename}\" to Zip file", DEBUG_WORDIMPORT);
-            } else {
-                debugging(__FUNCTION__ . ":" . __LINE__ . ": ignore unsupported media file $zefilename" .
-                    " = $imagename, imagesuffix = $imagesuffix", DEBUG_WORDIMPORT);
+                // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": added \"{$imagename}\" to Zip file", DEBUG_WORDIMPORT);
             }
         } else {
             // Look for required XML files, read and wrap it, remove the XML declaration, and add it to the XML string.
@@ -304,8 +292,8 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
         throw new moodle_exception('transformationfailed', 'booktool_wordimport', $tempwordmlfilename);
     }
     booktool_wordimport_debug_unlink($tempwordmlfilename);
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 1 succeeded, XHTML output fragment = " .
-        str_replace("\n", "", substr($xsltoutput, 0, 200)), DEBUG_WORDIMPORT);
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 1 succeeded, output = " .
+    // @codingStandardsIgnoreLine     str_replace("\n", "", substr($xsltoutput, 0, 200)), DEBUG_WORDIMPORT);
 
     // Write output of Pass 1 to a temporary file, for use in Pass 2.
     $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".if1";
@@ -315,7 +303,6 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
     }
 
     // Pass 2 - tidy up linear XHTML a bit.
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": XSLT Pass 2 using \"" . $word2xmlstylesheet2 . "\"", DEBUG_WORDIMPORT);
     if (!($xsltoutput = xslt_process($xsltproc, $tempxhtmlfilename, $word2xmlstylesheet2, null, null, $parameters))) {
         // Transformation failed.
         booktool_wordimport_debug_unlink($tempxhtmlfilename);
@@ -333,8 +320,8 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
     $xsltoutput = str_replace(' xmlns:mml="http://www.w3.org/1998/Math/MathML"', '', $xsltoutput);
     $xsltoutput = str_replace('<math>', '<math xmlns="http://www.w3.org/1998/Math/MathML">', $xsltoutput);
 
-    debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 2 succeeded, XHTML output fragment = " .
-        str_replace("\n", "", substr($xsltoutput, 500, 2000)), DEBUG_WORDIMPORT);
+    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 2 succeeded, output = " .
+    // @codingStandardsIgnoreLine     str_replace("\n", "", substr($xsltoutput, 500, 2000)), DEBUG_WORDIMPORT);
 
     // Keep the converted XHTML file for debugging if developer debugging enabled.
     if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
@@ -390,7 +377,7 @@ function booktool_wordimport_postprocess( $content ) {
     // Maximise memory available so that very large files can be exported.
     raise_memory_limit(MEMORY_HUGE);
 
-    $cleancontent = clean_html_text($content);
+    $cleancontent = booktool_wordimport_clean_html_text($content);
 
     // Set parameters for XSLT transformation. Note that we cannot use $arguments though.
     $parameters = array (
@@ -442,6 +429,48 @@ function booktool_wordimport_postprocess( $content ) {
     return $content;
 }   // End booktool_wordimport_postprocess function.
 
+/**
+ * Get images and write them as base64 inside the HTML content
+ *
+ * A string containing the HTML with embedded base64 images is returned
+ *
+ * @param string $content the HTML content of a book or chapter to be modified
+ * @param string $contextid the context ID
+ * @param string $contextid the chapter ID
+ * @return string the modified HTML with embedded images
+ */
+function booktool_wordimport_base64_images($content, $contextid, $chapterid = null) {
+    // Get the list of files embedded in the book or chapter.
+    // Note that this will break on images in the Book Intro section.
+
+    $fs = get_file_storage();
+    $files = $fs->get_area_files($contextid, 'mod_book', 'chapter', $chapterid);
+    foreach ($files as $fileinfo) {
+        // Process image files, converting them into Base64 encoding.
+        $fileext = strtolower(pathinfo($fileinfo->get_filename(), PATHINFO_EXTENSION));
+        if ($fileext == 'png' or $fileext == 'jpg' or $fileext == 'jpeg' or $fileext == 'gif') {
+            $filename = $fileinfo->get_filename();
+            $filetype = ($fileext == 'jpg') ? 'jpeg' : $fileext;
+            $fileitemid = $fileinfo->get_itemid();
+            $filepath = $fileinfo->get_filepath();
+            $filedata = $fs->get_file($contextid, 'mod_book', 'chapter', $fileitemid, $filepath, $filename);
+
+            if (!$filedata === false) {
+                $base64data = base64_encode($filedata->get_content());
+                $filedata = 'data:image/' . $filetype . ';base64,' . $base64data;
+
+                // Embed the image data into the HTML, and keep the original image name in a title attribute.
+                // Replace '<img src="@@PLUGINFILE@@/image.png"/> with '<img src="data:image/png;base64,..." title="image.png"/>.
+                $img_src = '@@PLUGINFILE@@' . $filepath . $filename;
+                // @codingStandardsIgnoreLine $content = str_replace($img_src, $filedata, $content);
+                $content = str_replace($img_src . '"', $filedata . '" title="' . $filename . '"', $content);
+            }
+        }
+    }
+
+    return $content;
+}
+
 
 /**
  * Clean HTML content
@@ -451,7 +480,7 @@ function booktool_wordimport_postprocess( $content ) {
  * @param string $cdatastring XHTML from inside a CDATA_SECTION in a question text element
  * @return string
  */
-function clean_html_text($cdatastring) {
+function booktool_wordimport_clean_html_text($cdatastring) {
     // Escape double minuses, which cause XSLT processing to fail.
     $cdatastring = str_replace("--", "WORDIMPORTMinusMinus", $cdatastring);
 

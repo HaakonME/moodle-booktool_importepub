@@ -66,14 +66,22 @@ if ($mform->is_cancelled()) {
         require_capability('mod/book:viewhiddenchapters', $context);
     }
 
-    // Preprocess the chapter HTML.
-    $chaptertext = file_rewrite_pluginfile_urls($chapter->content, 'pluginfile.php', $context->id,
-            'mod_book', 'chapter', $chapter->id);
-    $chaptertext = "<html><body>" . $chaptertext . "</body></html>";
-    // Postprocess the HTML to add a wrapper template, convert images into base64, etc.
-    $filecontent = booktool_wordimport_postprocess("<h1>" . $chapter->title . "</h1>" . $chaptertext);
-    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true,
-            array('filename' => clean_filename($book->name).'.doc'));
+    // Include the book title at the top of the chapter.
+    $chaptertext = "<p class='MsoTitle'>" . $book->name . "</p>\n";
+
+    // Check if the chapter title is duplicated inside the content, and include it if not.
+    if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
+        $chaptertext .= "<h1>" . $chapter->title . "</h1>\n";
+    } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
+        $chaptertext .= "<h2>" . $chapter->title . "</h2>\n";
+    }
+
+    // Preprocess the chapter HTML to embed images.
+    $chaptertext .= booktool_wordimport_base64_images($chapter->content, $context->id, $chapter->id);
+    // Postprocess the HTML to add a wrapper template and convert embedded images to a table.
+    $chaptertext = booktool_wordimport_postprocess($chaptertext);
+    $filename = clean_filename($book->name . '_chap' . sprintf("%02d", $chapter->pagenum)).'.doc';
+    send_file($chaptertext, $filename, 10, 0, true, array('filename' => $filename));
     die;
 } else if ($action == 'export') {
     // Export the whole book into Word.
@@ -83,17 +91,18 @@ if ($mform->is_cancelled()) {
     // Read the title, introduction and all the chapters into a string.
     $booktext = "<html><body><p class='MsoTitle'>" . $book->name . "</p>";
     $booktext .= file_rewrite_pluginfile_urls($book->intro, 'pluginfile.php', $context->id, 'mod_book', 'intro', null);
+
     foreach ($allchapters as $chapter) {
         // Check if the chapter title is duplicated inside the content, and include it if not.
         if (!strpos($chapter->content, "<h1")) {
             $booktext .= '<h1>' . $chapter->title . '</h1>';
         }
-        $booktext .= $chapter->content;
+        $booktext .= booktool_wordimport_base64_images($chapter->content, $context->id, $book->id, $chapter->id);
     }
     $booktext .= "</body></html>";
     $filecontent = booktool_wordimport_postprocess($booktext);
-    send_file($filecontent, clean_filename($book->name).'.doc', 10, 0, true,
-            array('filename' => clean_filename($book->name).'.doc'));
+    $filename = clean_filename($book->name) . '.doc';
+    send_file($filecontent, $filename, 10, 0, true, array('filename' => $filename));
     die;
 } else if ($data = $mform->get_data()) {
     // A Word file has been uploaded, so process it.

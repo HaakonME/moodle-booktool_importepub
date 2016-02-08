@@ -15,15 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import Microsoft Word file library.
+ * Import Microsoft Word file - menu configuration.
  *
  * @package    booktool_wordimport
  * @copyright  2016 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-/* This file contains code based on mod/book/tool/print/lib.php
- * (copyright 2004-2011 Petr Skoda) from Moodle 2.4. */
 
 defined('MOODLE_INTERNAL') || die();
 
