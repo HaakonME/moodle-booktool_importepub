@@ -461,9 +461,9 @@ function booktool_wordimport_base64_images($content, $contextid, $chapterid = nu
 
                 // Embed the image data into the HTML, and keep the original image name in a title attribute.
                 // Replace '<img src="@@PLUGINFILE@@/image.png"/> with '<img src="data:image/png;base64,..." title="image.png"/>.
-                $img_src = '@@PLUGINFILE@@' . $filepath . $filename;
+                $imgsrc = '@@PLUGINFILE@@' . $filepath . $filename;
                 // @codingStandardsIgnoreLine $content = str_replace($img_src, $filedata, $content);
-                $content = str_replace($img_src . '"', $filedata . '" title="' . $filename . '"', $content);
+                $content = str_replace($imgsrc . '"', $filedata . '" title="' . $filename . '"', $content);
             }
         }
     }
