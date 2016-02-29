@@ -382,6 +382,18 @@
     <xsl:template match="x:a[@class='bookmarkEnd' and not(node())]" priority="2"/>
     <xsl:template match="x:a[@href='\* MERGEFORMAT']" priority="2"/>
 
+    <!-- Check if a table surrounds a Case Study -->
+    <xsl:template match="x:table[x:thead/x:tr[1]/x:td[1]/x:p[1][@class = 'heading4']]">
+        <div class="casestudy">
+            <h4>
+                <xsl:apply-templates select="x:thead/x:tr[1]/x:td[1]/x:p[1][@class = 'heading4']"/>
+            </h4>
+            <div class="whitebox">
+                <xsl:apply-templates select="x:tbody/x:tr[1]/x:td[1]"/>
+            </div>
+        </div>
+    </xsl:template>
+
     <!-- Convert table body cells containing headings into th's -->
     <xsl:template match="x:td[contains(x:p[1]/@class, 'tablerowhead')]">
         <xsl:value-of select="$debug_newline"/>
