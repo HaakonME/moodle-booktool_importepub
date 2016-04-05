@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-define('DEBUG_WORDIMPORT', DEBUG_NONE);
+define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once(dirname(__FILE__).'/xslemulatexslt.inc');
@@ -297,6 +297,9 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
 
     // Write output of Pass 1 to a temporary file, for use in Pass 2.
     $tempxhtmlfilename = $CFG->dataroot . '/temp/' . basename($filename, ".tmp") . ".if1";
+    $xsltoutput = str_replace('<p xmlns="http://www.w3.org/1999/xhtml"', '<p', $xsltoutput);
+    $xsltoutput = str_replace('<span xmlns="http://www.w3.org/1999/xhtml"', '<span', $xsltoutput);
+    $xsltoutput = str_replace(' xmlns=""', '', $xsltoutput);
     if ((file_put_contents($tempxhtmlfilename, $xsltoutput )) == 0) {
         // Cannot save the file.
         throw new moodle_exception('cannotsavefile', 'error', $tempxhtmlfilename);
@@ -312,6 +315,7 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
 
     // Strip out superfluous namespace declarations on paragraph elements, which Moodle 2.7+ on Windows seems to throw in.
     $xsltoutput = str_replace('<p xmlns="http://www.w3.org/1999/xhtml"', '<p', $xsltoutput);
+    $xsltoutput = str_replace('<span xmlns="http://www.w3.org/1999/xhtml"', '<span', $xsltoutput);
     $xsltoutput = str_replace(' xmlns=""', '', $xsltoutput);
     // Remove 'mml:' prefix from child MathML element and attributes for compatibility with MathJax.
     $xsltoutput = str_replace('<mml:', '<', $xsltoutput);
@@ -342,7 +346,7 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
  * @param string $content all HTML content from a book or chapter
  * @return string Word-compatible XHTML text
  */
-function booktool_wordimport_postprocess( $content ) {
+function booktool_wordimport_export( $content ) {
     global $CFG, $USER, $COURSE, $OUTPUT;
 
     /** @var string export template with Word-compatible CSS style definitions */
@@ -427,7 +431,7 @@ function booktool_wordimport_postprocess( $content ) {
     }
 
     return $content;
-}   // End booktool_wordimport_postprocess function.
+}   // End booktool_wordimport_export function.
 
 /**
  * Get images and write them as base64 inside the HTML content

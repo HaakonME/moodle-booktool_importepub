@@ -81,7 +81,7 @@ if ($mform->is_cancelled()) {
     $chaptertext .= booktool_wordimport_base64_images($context->id, 'chapter', $chapter->id);
     $chaptertext .= '</div>';
     // Postprocess the HTML to add a wrapper template and convert embedded images to a table.
-    $chaptertext = booktool_wordimport_postprocess($chaptertext);
+    $chaptertext = booktool_wordimport_export($chaptertext);
     $filename = clean_filename($book->name . '_chap' . sprintf("%02d", $chapter->pagenum)).'.doc';
     send_file($chaptertext, $filename, 10, 0, true, array('filename' => $filename));
     die;
@@ -109,7 +109,7 @@ if ($mform->is_cancelled()) {
         $booktext .= booktool_wordimport_base64_images($context->id, 'chapter', $chapter->id);
         $booktext .= "</div>\n";
     }
-    $booktext = booktool_wordimport_postprocess($booktext);
+    $booktext = booktool_wordimport_export($booktext);
     $filename = clean_filename($book->name) . '.doc';
     send_file($booktext, $filename, 10, 0, true, array('filename' => $filename));
     die;
