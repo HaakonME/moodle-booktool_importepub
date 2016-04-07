@@ -1,7 +1,7 @@
 # Change log
 
 Date          Version   Comment
-2016/02/29    0.9.7     Support some special case formatting: case studies, foot/end-notes.
+2016/04/06    0.9.7     Improve table formatting, support boxed text in books.
 2016/02/08    0.9.6     Add support for images when exporting books to Word.
 2016/02/06    0.9.5     Add basic support for exporting books to Word.
 2016/02/06    0.9.4     Handle Word 2013 and LibreOffice files better.

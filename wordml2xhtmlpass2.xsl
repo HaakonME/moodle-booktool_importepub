@@ -34,10 +34,11 @@
     <xsl:preserve-space elements="x:span x:p"/>
 
     <xsl:param name="debug_flag" select="0"/>
+    <xsl:param name="pluginname"/>
     <xsl:param name="course_id"/>
-    <xsl:param name="heading1stylelevel" select="3"/>
+    <xsl:param name="heading1stylelevel" select="1"/>
 
-    <!-- Figure out an offset by which to demote headings e.g. Heading 1  to H2, etc. -->
+    <!-- Figure out an offset by which to demote Atto headings e.g. Heading 1  to H2, etc. -->
     <!-- Use a system default, or a document-specific override -->
     <xsl:variable name="moodleHeading1Level" select="/x:html/x:head/x:meta[@name = 'moodleHeading1Level']/@content"/>
     <xsl:variable name="heading_demotion_offset">
@@ -382,34 +383,79 @@
     <xsl:template match="x:a[@class='bookmarkEnd' and not(node())]" priority="2"/>
     <xsl:template match="x:a[@href='\* MERGEFORMAT']" priority="2"/>
 
-    <!-- Check if a table surrounds a Case Study -->
-    <xsl:template match="x:table[x:thead/x:tr[1]/x:td[1]/x:p[1][@class = 'heading4']]">
-        <div class="casestudy">
-            <h4>
-                <xsl:apply-templates select="x:thead/x:tr[1]/x:td[1]/x:p[1][@class = 'heading4']"/>
-            </h4>
-            <div class="whitebox">
-                <xsl:apply-templates select="x:tbody/x:tr[1]/x:td[1]"/>
+    <xsl:template match="x:table">
+        <!-- If a table contains a h4 in the first heading cell, then it's a Case Study -->
+        <xsl:choose>
+        <xsl:when test="x:thead/x:tr[1]/x:th[1]/x:p[1]/@class = 'heading4' and $pluginname = 'booktool_wordimport'">
+            <div class="casestudy">
+                <xsl:apply-templates select="x:thead/x:tr[1]/x:th[1]/x:p[@class = 'heading4']"/>
+                <div class="whitebox">
+                    <xsl:apply-templates select="x:tbody/x:tr[1]/x:td[1]/node()"/>
+                </div>
             </div>
-        </div>
+        </xsl:when>
+        <xsl:otherwise>
+            <!-- Always include a border on data tables -->
+            <table border="1px">
+                <xsl:apply-templates select="@*"/>
+                <!-- Check if a table has a title in the previous paragraph-->
+                <xsl:if test="preceding-sibling::x:p[1]/@class = 'tabletitle'">
+                    <caption>
+                        <xsl:apply-templates select="preceding-sibling::x:p[1]" mode="tablecaption"/>
+                    </caption>
+                </xsl:if>
+
+                <!-- Explicitly process table rows, so that position() works for odd/even -->
+                <xsl:apply-templates select="x:thead/x:tr"/>
+                <xsl:apply-templates select="x:tbody/x:tr"/>
+            </table>
+        </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <!-- Omit table titles, since they are included in the table itself-->
+    <xsl:template match="x:p[@class = 'tabletitle']"/>
+    <!-- Process the table titles as a caption-->
+    <xsl:template match="x:p[@class = 'tabletitle']" mode="tablecaption">
+        <xsl:apply-templates/>
+    </xsl:template>
+
+    <!-- Remove redundant style information, retaining only borders and widths on table cells, and text direction in paragraphs-->
+    <xsl:template match="x:table/@style">
+        <xsl:if test="contains(., 'margin-left:-')">
+            <xsl:attribute name="style">
+                <xsl:value-of select="substring-before(., 'margin-left:-')"/>
+            </xsl:attribute>
+        </xsl:if>
+    </xsl:template>
+
+    <!-- Mark table rows odd or even -->
+    <xsl:template match="x:tr">
+        <xsl:variable name="row_class">
+            <xsl:choose>
+            <xsl:when test="position() mod 2 = 1">
+                <xsl:value-of select="'r0'"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="'r1'"/>
+            </xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+        <tr class="{$row_class}" style="vertical-align: text-top">
+            <xsl:apply-templates/>
+        </tr>
     </xsl:template>
 
     <!-- Convert table body cells containing headings into th's -->
     <xsl:template match="x:td[contains(x:p[1]/@class, 'tablerowhead')]">
         <xsl:value-of select="$debug_newline"/>
         <th>
-            <xsl:apply-templates select="@*"/>
-            <xsl:apply-templates select="*"/>
+            <xsl:apply-templates/>
         </th>
     </xsl:template>
 
-    <!-- Table cells -->
-    <xsl:template match="x:td">
-        <xsl:value-of select="$debug_newline"/>
-        <td>
-            <xsl:apply-templates select="node()"/>
-        </td>
-    </xsl:template>
+    <!-- Delete unused image, hyperlink and style info -->
+    <xsl:template match="x:imageLinks|x:imagesContainer|x:styleMap|x:hyperLinks"/>
 
     <xsl:template match="@name[parent::x:a]">
         <xsl:attribute name="name">
@@ -417,19 +463,16 @@
         </xsl:attribute>
     </xsl:template>
 
-<!-- Delete unused image, hyperlink and style info -->
-<xsl:template match="x:imageLinks|x:imagesContainer|x:styleMap|x:hyperLinks"/>
+    <!-- Include debugging information in the output -->
+    <xsl:template name="debugComment">
+        <xsl:param name="comment_text"/>
+        <xsl:param name="inline" select="'false'"/>
+        <xsl:param name="condition" select="'true'"/>
 
-<!-- Include debugging information in the output -->
-<xsl:template name="debugComment">
-    <xsl:param name="comment_text"/>
-    <xsl:param name="inline" select="'false'"/>
-    <xsl:param name="condition" select="'true'"/>
-
-    <xsl:if test="boolean($condition) and $debug_flag &gt;= 1">
-        <xsl:if test="$inline = 'false'"><xsl:text>&#x0a;</xsl:text></xsl:if>
-        <xsl:comment><xsl:value-of select="concat('Debug: ', $comment_text)"/></xsl:comment>
-        <xsl:if test="$inline = 'false'"><xsl:text>&#x0a;</xsl:text></xsl:if>
-    </xsl:if>
-</xsl:template>
+        <xsl:if test="boolean($condition) and $debug_flag &gt;= 1">
+            <xsl:if test="$inline = 'false'"><xsl:text>&#x0a;</xsl:text></xsl:if>
+            <xsl:comment><xsl:value-of select="concat('Debug: ', $comment_text)"/></xsl:comment>
+            <xsl:if test="$inline = 'false'"><xsl:text>&#x0a;</xsl:text></xsl:if>
+        </xsl:if>
+    </xsl:template>
 </xsl:stylesheet>

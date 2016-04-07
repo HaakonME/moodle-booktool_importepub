@@ -24,11 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016020801;
+$plugin->version = 2016040701;
 $plugin->requires = 2012062500;
 $plugin->component = 'booktool_wordimport';
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.9.6 (Build: 20160208)';
+$plugin->release = '0.9.7 (Build: 20160407)';
 
 $plugin->dependencies = array(
     'booktool_importhtml'     => 2012061700,
