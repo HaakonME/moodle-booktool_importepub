@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
+define('DEBUG_WORDIMPORT', DEBUG_NONE);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once(dirname(__FILE__).'/xslemulatexslt.inc');
@@ -349,9 +349,13 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
 function booktool_wordimport_export( $content ) {
     global $CFG, $USER, $COURSE, $OUTPUT;
 
-    /** @var string export template with Word-compatible CSS style definitions */
+    /*
+     * @var string export template with Word-compatible CSS style definitions
+    */
     $wordfiletemplate = 'wordfiletemplate.html';
-    /** @var string Stylesheet to export XHTML into Word-compatible XHTML */
+    /*
+     * @var string Stylesheet to export XHTML into Word-compatible XHTML
+    */
     $exportstylesheet = 'xhtml2wordpass2.xsl';
 
     // @codingStandardsIgnoreLine debugging(__FUNCTION__ . '($content = "' . str_replace("\n", "", substr($content, 80, 500)) . ' ...")', DEBUG_WORDIMPORT);
@@ -494,6 +498,7 @@ function booktool_wordimport_clean_html_text($cdatastring) {
 
     // Wrap the string in a HTML wrapper, load it into a new DOM document as HTML, but save as XML.
     $doc = new DOMDocument();
+    libxml_use_internal_errors(true);
     $doc->loadHTML('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><html><body>' . $cdatastring . '</body></html>');
     $doc->getElementsByTagName('html')->item(0)->setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
     $xml = $doc->saveXML();
