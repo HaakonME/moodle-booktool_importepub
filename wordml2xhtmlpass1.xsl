@@ -80,7 +80,6 @@
 
  * XSLT stylesheet to transform WordProcessingML from Word 2010 files into linear XHTML format
  *
- * @package booktool_wordimport
  * @copyright 2004-2005, Oleg Tkachenko
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (5)
 -->
