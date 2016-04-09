@@ -395,8 +395,22 @@
             </div>
         </xsl:when>
         <xsl:otherwise>
-            <!-- Always include a border on data tables -->
-            <table border="1px">
+            <table>
+                <xsl:for-each select="@*">
+                    <xsl:choose>
+                    <!-- Include a class on tables so they can be styled in CSS -->
+                    <xsl:when test="name() = 'class'">
+                        <xsl:attribute name="{name()}">
+                            <xsl:value-of select="concat('book_datatable ', .)"/>
+                        </xsl:attribute>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:attribute name="{name()}">
+                            <xsl:value-of select="."/>
+                        </xsl:attribute>
+                    </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:for-each>
                 <xsl:apply-templates select="@*"/>
                 <!-- Check if a table has a title in the previous paragraph-->
                 <xsl:if test="preceding-sibling::x:p[1]/@class = 'tabletitle'">
