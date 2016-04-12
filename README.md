@@ -157,7 +157,7 @@ This functionality is only available with Moodle 2.5 and later.
 
 ## Credits
 
-This code is based on the Lucimoo Moodle plugin by Haakon Meland Eriksen (cf. https://moodle.org/plugins/booktool_importepub).
+This code is based on the Lucimoo Moodle plugin by Mikael Ylikoski (cf. https://moodle.org/plugins/booktool_importepub).
 
 
 
