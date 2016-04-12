@@ -162,7 +162,7 @@
             <!-- No styles left, so just process the children in the normal way -->
             <xsl:apply-templates select="node()"/>
         </xsl:when>
-        <xsl:when test="$stylePropertyFirst = 'color:#000000'">
+        <xsl:when test="$stylePropertyFirst = 'color:#000000' or $stylePropertyFirst = 'color:#00000A'">
             <!-- Omit spans that define text colour to black -->
             <xsl:apply-templates select="." mode="styleProperty">
                 <xsl:with-param name="styleProperty" select="$stylePropertyRemainder"/>
@@ -396,12 +396,13 @@
         </xsl:when>
         <xsl:otherwise>
             <table>
+                <!-- Copy the table attributes, but handle @style separately -->
                 <xsl:for-each select="@*">
                     <xsl:choose>
-                    <!-- Include a class on tables so they can be styled in CSS -->
-                    <xsl:when test="name() = 'class'">
-                        <xsl:attribute name="{name()}">
-                            <xsl:value-of select="concat('book_datatable ', .)"/>
+                    <!-- Modify the @style attribute to strip negative left margins -->
+                    <xsl:when test="name() = 'style' and contains(., 'margin-left:-')">
+                        <xsl:attribute name="style">
+                            <xsl:value-of select="substring-before(., 'margin-left:-')"/>
                         </xsl:attribute>
                     </xsl:when>
                     <xsl:otherwise>
@@ -411,7 +412,7 @@
                     </xsl:otherwise>
                     </xsl:choose>
                 </xsl:for-each>
-                <xsl:apply-templates select="@*"/>
+
                 <!-- Check if a table has a title in the previous paragraph-->
                 <xsl:if test="preceding-sibling::x:p[1]/@class = 'tabletitle'">
                     <caption>
@@ -419,9 +420,7 @@
                     </caption>
                 </xsl:if>
 
-                <!-- Explicitly process table rows, so that position() works for odd/even -->
-                <xsl:apply-templates select="x:thead/x:tr"/>
-                <xsl:apply-templates select="x:tbody/x:tr"/>
+                <xsl:apply-templates/>
             </table>
         </xsl:otherwise>
         </xsl:choose>
@@ -434,17 +433,20 @@
         <xsl:apply-templates/>
     </xsl:template>
 
-    <!-- Remove redundant style information, retaining only borders and widths on table cells, and text direction in paragraphs-->
-    <xsl:template match="x:table/@style">
-        <xsl:if test="contains(., 'margin-left:-')">
-            <xsl:attribute name="style">
-                <xsl:value-of select="substring-before(., 'margin-left:-')"/>
-            </xsl:attribute>
-        </xsl:if>
+    <!-- Process Figure captions -->
+    <xsl:template match="x:p[@class = 'caption' or @class = 'MsoCaption']">
+        <p class="figure-caption"><xsl:apply-templates/></p>
     </xsl:template>
 
-    <!-- Mark table rows odd or even -->
-    <xsl:template match="x:tr">
+    <!-- Handle table body explicitly, so that rows can be marked odd or even -->
+    <xsl:template match="x:tbody">
+        <tbody>
+            <xsl:apply-templates select="x:tr"/>
+        </tbody>
+    </xsl:template>
+
+    <!-- Mark table body rows odd or even -->
+    <xsl:template match="x:tr[parent::x:tbody]">
         <xsl:variable name="row_class">
             <xsl:choose>
             <xsl:when test="position() mod 2 = 1">
@@ -455,7 +457,7 @@
             </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        <tr class="{$row_class}" style="vertical-align: text-top">
+        <tr class="{$row_class}">
             <xsl:apply-templates/>
         </tr>
     </xsl:template>

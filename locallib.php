@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-define('DEBUG_WORDIMPORT', DEBUG_NONE);
+define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once(dirname(__FILE__).'/xslemulatexslt.inc');
@@ -76,8 +76,8 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
     $h1matches = null;
     $chaptermatches = null;
     // Grab title and contents of each section.
-    $chaptermatches = preg_split('#<h1>.*</h1>#isU', $htmlcontent);
-    preg_match_all('#<h1>(.*)</h1>#i', $htmlcontent, $h1matches);
+    $chaptermatches = preg_split('#<h3>.*</h3>#isU', $htmlcontent);
+    preg_match_all('#<h3>(.*)</h3>#i', $htmlcontent, $h1matches);
     // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": n chapters = " . count($chaptermatches), DEBUG_WORDIMPORT);
 
     // If no h1 elements are present, treat the whole file as a single chapter.
@@ -101,8 +101,8 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
             $h2matches = null;
             $subchaptermatches = null;
             // Grab title and contents of each subsection.
-            preg_match_all('#<h2>(.*)</h2>#i', $chapcontent, $h2matches);
-            $subchaptermatches = preg_split('#<h2>.*</h2>#isU', $chapcontent);
+            preg_match_all('#<h4>(.*)</h4>#i', $chapcontent, $h2matches);
+            $subchaptermatches = preg_split('#<h4>.*</h4>#isU', $chapcontent);
 
             // First save the initial chapter content.
             $chapcontent = $subchaptermatches[0];
@@ -201,7 +201,7 @@ function booktool_wordimport_convert_to_xhtml($filename, &$imagesforzipping) {
     $parameters = array (
         'moodle_language' => current_language(),
         'moodle_textdirection' => (right_to_left()) ? 'rtl' : 'ltr',
-        'heading1stylelevel' => '1',
+        'heading1stylelevel' => '3',
         'pluginname' => 'booktool_wordimport', // Include plugin name to control image data handling inside XSLT.
         'debug_flag' => DEBUG_WORDIMPORT
     );

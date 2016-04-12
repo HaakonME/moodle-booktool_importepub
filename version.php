@@ -28,7 +28,7 @@ $plugin->version = 2016040901;
 $plugin->requires = 2012062500;
 $plugin->component = 'booktool_wordimport';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.0.0 (Build: 20160409)';
+$plugin->release = '1.0.1 (Build: 20160412)';
 
 $plugin->dependencies = array(
     'booktool_importhtml'     => 2012061700,
