@@ -9,8 +9,8 @@ class KeyFrame extends CSSList implements AtRule {
 	private $vendorKeyFrame;
 	private $animationName;
 
-	public function __construct() {
-		parent::__construct();
+	public function __construct($iLineNo = 0) {
+		parent::__construct($iLineNo);
 		$this->vendorKeyFrame = null;
 		$this->animationName  = null;
 	}
@@ -32,10 +32,18 @@ class KeyFrame extends CSSList implements AtRule {
 	}
 
 	public function __toString() {
-		$sResult = "@{$this->vendorKeyFrame} {$this->animationName} {";
-		$sResult .= parent::__toString();
+		return $this->render(new \Sabberworm\CSS\OutputFormat());
+	}
+
+	public function render(\Sabberworm\CSS\OutputFormat $oOutputFormat) {
+		$sResult = "@{$this->vendorKeyFrame} {$this->animationName}{$oOutputFormat->spaceBeforeOpeningBrace()}{";
+		$sResult .= parent::render($oOutputFormat);
 		$sResult .= '}';
 		return $sResult;
+	}
+
+	public function isRootList() {
+		return false;
 	}
 
 	public function atRuleName() {

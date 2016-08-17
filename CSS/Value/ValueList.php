@@ -7,7 +7,8 @@ abstract class ValueList extends Value {
 	protected $aComponents;
 	protected $sSeparator;
 
-	public function __construct($aComponents = array(), $sSeparator = ',') {
+	public function __construct($aComponents = array(), $sSeparator = ',', $iLineNo = 0) {
+		parent::__construct($iLineNo);
 		if (!is_array($aComponents)) {
 			$aComponents = array($aComponents);
 		}
@@ -35,8 +36,12 @@ abstract class ValueList extends Value {
 		$this->sSeparator = $sSeparator;
 	}
 
-	function __toString() {
-		return implode($this->sSeparator, $this->aComponents);
+	public function __toString() {
+		return $this->render(new \Sabberworm\CSS\OutputFormat());
+	}
+
+	public function render(\Sabberworm\CSS\OutputFormat $oOutputFormat) {
+		return $oOutputFormat->implode($oOutputFormat->spaceBeforeListArgumentSeparator($this->sSeparator) . $this->sSeparator . $oOutputFormat->spaceAfterListArgumentSeparator($this->sSeparator), $this->aComponents);
 	}
 
 }

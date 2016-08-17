@@ -19,14 +19,14 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2013-2016 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2014121800;
+$plugin->version = 2016081500;
 $plugin->requires = 2012062500;
 $plugin->component = 'booktool_importepub';
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.16';
+$plugin->release = '0.17';

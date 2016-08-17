@@ -19,7 +19,7 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2013-2016 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -627,7 +627,7 @@ function toolbook_importepub_import_chapters($package, $type, $chapterfiles,
     foreach ($chapters as $chapter) {
         // find references to all files and copy them + relink them
         $matches = null;
-        if (preg_match_all('/(src|codebase|name|href)\s*=\s*[\'"]([^\'"#]+)(#[^\'"]*)?[\'"]/i', $chapter->content, $matches)) {
+        if (preg_match_all('/(src|codebase|name|href|data)\s*=\s*[\'"]([^\'"#]+)(#[^\'"]*)?[\'"]/i', $chapter->content, $matches)) {
             $filerecord = array('contextid' => $context->id,
                                 'component' => 'mod_book',
                                 'filearea' => 'chapter',
