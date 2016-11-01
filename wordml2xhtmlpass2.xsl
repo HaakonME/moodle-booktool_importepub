@@ -27,8 +27,10 @@
     xmlns="http://www.w3.org/1999/xhtml"
     xmlns:x="http://www.w3.org/1999/xhtml"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
     xmlns:mml="http://www.w3.org/1998/Math/MathML"
-    exclude-result-prefixes="x"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    exclude-result-prefixes="x mc"
     version="1.0">
     <xsl:output method="xml" encoding="UTF-8" indent="no" omit-xml-declaration="yes"/>
     <xsl:preserve-space elements="x:span x:p"/>
@@ -89,7 +91,7 @@
     <xsl:template match="@mathvariant"/>
 
     <!-- Remove redundant style information, retaining only borders and widths on table cells, and text direction in paragraphs-->
-    <xsl:template match="@style[not(parent::x:table) and not(contains(., 'direction:'))]" priority="1"/>
+    <xsl:template match="@style[not(ancestor::x:table) and not(contains(., 'direction:'))]" priority="1"/>
 
      <!-- Delete superfluous spans that wrap the complete para content -->
     <xsl:template match="x:span[count(.//node()[self::x:span]) = count(.//node())]" priority="2"/>
@@ -162,7 +164,7 @@
             <!-- No styles left, so just process the children in the normal way -->
             <xsl:apply-templates select="node()"/>
         </xsl:when>
-        <xsl:when test="$stylePropertyFirst = 'color:#000000' or $stylePropertyFirst = 'color:#00000A'">
+        <xsl:when test="$stylePropertyFirst = 'color:#000000'">
             <!-- Omit spans that define text colour to black -->
             <xsl:apply-templates select="." mode="styleProperty">
                 <xsl:with-param name="styleProperty" select="$stylePropertyRemainder"/>
@@ -375,6 +377,34 @@
         </p>
     </xsl:template>
 
+    <!-- Preformatted text -->
+    <xsl:template match="x:p[starts-with(@class, 'macro') or starts-with(@class, 'htmlpreformatted')]" priority="2">
+        <xsl:variable name="paraClass" select="@class"/>
+        <xsl:if test="not(starts-with(preceding-sibling::x:p[1]/@class, $paraClass))">
+            <!-- First item in a sequence of preformatted text, so start a '<pre>', and pull in succeeding lines -->
+            <xsl:value-of select="$debug_newline"/>
+            <pre>
+                <xsl:apply-templates/>
+                <!-- Recursively process following paragraphs until we hit one that isn't a list item -->
+                <xsl:apply-templates select="following::x:p[1]" mode="preformatted"/>
+            </pre>
+        </xsl:if>
+        <!-- Silently ignore the item if it is not the first -->
+    </xsl:template>
+
+    <!-- Output another preformatted line only if it has the right class -->
+    <xsl:template match="x:p" mode="preformatted">
+
+        <xsl:choose>
+        <xsl:when test="starts-with(@class, 'macro') or starts-with(@class, 'htmlpreformatted')">
+            <xsl:value-of select="'&#x0a;'"/>
+                <xsl:apply-templates/>
+                <!-- Recursively process following paragraphs until we hit one that isn't a pre -->
+                <xsl:apply-templates select="following::x:p[1]"  mode="preformatted"/>
+        </xsl:when>
+        </xsl:choose>
+    </xsl:template>
+
     <!-- Delete any temporary ToC Ids to enable differences to be checked more easily, reduce clutter -->
     <xsl:template match="x:a[@class = 'bookmarkStart' and count(@*) = 3 and not(node())]" priority="4"/>
     <!-- Delete any spurious OLE_LINK bookmarks that Word inserts -->
@@ -383,8 +413,9 @@
     <xsl:template match="x:a[@class='bookmarkEnd' and not(node())]" priority="2"/>
     <xsl:template match="x:a[@href='\* MERGEFORMAT']" priority="2"/>
 
+    <!-- Handle tables differently depending on the context (booktool, qformat) -->
     <xsl:template match="x:table">
-        <!-- If a table contains a h4 in the first heading cell, then it's a Case Study -->
+        <!-- If in booktool and a table contains a h4 in the first heading cell, then it's a Case Study (for Kimmage DSC) -->
         <xsl:choose>
         <xsl:when test="x:thead/x:tr[1]/x:th[1]/x:p[1]/@class = 'heading4' and $pluginname = 'booktool_wordimport'">
             <div class="casestudy">
@@ -396,22 +427,7 @@
         </xsl:when>
         <xsl:otherwise>
             <table>
-                <!-- Copy the table attributes, but handle @style separately -->
-                <xsl:for-each select="@*">
-                    <xsl:choose>
-                    <!-- Modify the @style attribute to strip negative left margins -->
-                    <xsl:when test="name() = 'style' and contains(., 'margin-left:-')">
-                        <xsl:attribute name="style">
-                            <xsl:value-of select="substring-before(., 'margin-left:-')"/>
-                        </xsl:attribute>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:attribute name="{name()}">
-                            <xsl:value-of select="."/>
-                        </xsl:attribute>
-                    </xsl:otherwise>
-                    </xsl:choose>
-                </xsl:for-each>
+                <xsl:apply-templates select="@*"/>
 
                 <!-- Check if a table has a title in the previous paragraph-->
                 <xsl:if test="preceding-sibling::x:p[1]/@class = 'tabletitle'">
@@ -433,7 +449,50 @@
         <xsl:apply-templates/>
     </xsl:template>
 
-    <!-- Process Figure captions -->
+    <!-- Clean up table style so that border is either on or off -->
+    <xsl:template match="x:table/@style" priority="2">
+        <!-- Get the style of the 1st body cell in the 1st row of the table -->
+        <xsl:variable name="tdStyle" select="../x:tbody/x:tr/x:td/@style"/>
+        <!-- Get the style of the top border only -->
+        <xsl:variable name="tdStyleBorder" select="substring-before(substring-after($tdStyle, 'border-top:'), ';')"/>
+        <xsl:variable name="tdStyleBorderWidth" select="substring-after(substring-after($tdStyleBorder, ' '), ' ')"/>
+        <xsl:variable name="tdStyleBorderType" select="substring-before($tdStyleBorder, ' ')"/>
+        <!-- Get the 2nd item of the top border style settings, which is the color value -->
+        <xsl:variable name="tdStyleBorderColor" select="substring-before(substring-after($tdStyleBorder, ' '), ' ')"/>
+
+        <xsl:variable name="tableBorderStyleKeep">
+            <xsl:choose>
+    <!-- Remove negative indent on tables, so that the first column is not partially hidden-->
+            <xsl:when test="contains(., 'margin-left:-')">
+                    <xsl:value-of select="substring-before(., 'margin-left:-')"/>
+            </xsl:when>
+            <xsl:otherwise>
+                    <xsl:value-of select="."/>
+            </xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+
+        <xsl:variable name="tableBorderColor">
+            <xsl:choose>
+            <!-- Replace windowtext with black-->
+            <xsl:when test="$tdStyleBorderColor = 'windowtext'">
+                    <xsl:value-of select="'black'"/>
+            </xsl:when>
+            <xsl:otherwise>
+                    <xsl:value-of select="$tdStyleBorderColor"/>
+            </xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+
+            <xsl:attribute name="style">
+            <xsl:value-of select="concat('cellpadding:1pt; border:', $tdStyleBorderType, ' ', $tableBorderColor, ' ', $tdStyleBorderWidth, '; ', $tableBorderStyleKeep)"/>
+            </xsl:attribute>
+    </xsl:template>
+
+    <!-- Clean up cell styles to reduce verbosity -->
+    <xsl:template match="x:td/@style|x:th/@style" priority="1"/>
+
+    <!-- Process Figure captions, so that they can be explicitly styled -->
     <xsl:template match="x:p[@class = 'caption' or @class = 'MsoCaption']">
         <p class="figure-caption"><xsl:apply-templates/></p>
     </xsl:template>
@@ -445,8 +504,8 @@
         </tbody>
     </xsl:template>
 
-    <!-- Mark table body rows odd or even -->
-    <xsl:template match="x:tr[parent::x:tbody]">
+    <!-- Mark table rows odd or even -->
+    <xsl:template match="x:tbody/x:tr">
         <xsl:variable name="row_class">
             <xsl:choose>
             <xsl:when test="position() mod 2 = 1">
@@ -457,7 +516,7 @@
             </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        <tr class="{$row_class}">
+        <tr class="{$row_class}" style="vertical-align: text-top">
             <xsl:apply-templates/>
         </tr>
     </xsl:template>
@@ -469,6 +528,9 @@
             <xsl:apply-templates/>
         </th>
     </xsl:template>
+
+    <!-- Strip out VML/drawingML markup from Word 2010 files (cf. http://officeopenxml.com/drwOverview.php)-->
+    <xsl:template match="mc:AlternateContent|m:ctrlPr"/>
 
     <!-- Delete unused image, hyperlink and style info -->
     <xsl:template match="x:imageLinks|x:imagesContainer|x:styleMap|x:hyperLinks"/>

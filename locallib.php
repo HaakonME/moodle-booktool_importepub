@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-define('DEBUG_WORDIMPORT', DEBUG_NONE);
+define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once(dirname(__FILE__).'/xslemulatexslt.inc');
