@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2016/11/07    1.1.1     Remove requirement to install booktool_importhtml
 2016/10/31    1.1.0     Retain table border style, handle WMF images better, support pre-formatted text
 2016/04/12    1.0.1     Fix support for table headings (thead), offset headings from h3, not h1.
 2016/04/09    1.0.0     Allow table styling based on class, declare plugin stable.
