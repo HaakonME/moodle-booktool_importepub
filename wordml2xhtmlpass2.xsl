@@ -17,7 +17,7 @@
 
  * XSLT stylesheet to transform rough XHTML derived from Word 2010 files into a more hierarchical format with divs wrapping each heading and table (question name and item)
  *
- * @package qformat_wordtable
+ * @package booktool_wordimport
  * @copyright 2010-2016 Eoin Campbell
  * @author Eoin Campbell
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (5)

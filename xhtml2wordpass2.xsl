@@ -37,6 +37,7 @@
 <xsl:param name="institution_name"/>
 <xsl:param name="moodle_country"/> <!-- Users country -->
 <xsl:param name="moodle_language" select="'en'"/> <!-- Interface language for user -->
+<xsl:param name="moodle_textdirection"/> <!-- Current text direction ltr or rtl -->
 <xsl:param name="moodle_release"/>  <!-- 1.9 or 2.x -->
 <xsl:param name="moodle_url"/>      <!-- Location of Moodle site -->
 <xsl:param name="moodle_username"/> <!-- Username for login -->
@@ -44,7 +45,7 @@
 
 <xsl:variable name="ucase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'" />
 <xsl:variable name="lcase" select="'abcdefghijklmnopqrstuvwxyz'" />
-<xsl:variable name="pluginfiles_string" select="'@@PLUGINFILE@@'"/>
+<xsl:variable name="pluginfiles_string" select="'@@PLUGINFILE@@/'"/>
 <xsl:variable name="embeddedimagedata_string" select="'data:image/'"/>
 <xsl:variable name="base64data_string" select="';base64,'"/>
 
@@ -63,7 +64,6 @@
 <xsl:variable name="contains_embedded_images" select="count($data//htm:img[contains(@src, $base64data_string)])"/>
 
 <xsl:variable name="transformationfailed" select="$moodle_labels/data[@name = 'qformat_wordtable_transformationfailed']"/>
-<xsl:variable name="moodle_textdirection" select="$moodle_labels/data[@name = 'langconfig_thisdirection']"/>
 
 <!-- Get the locale if present as part of the language definition (e.g. zh_cn) -->
 <xsl:variable name="moodle_language_locale">
@@ -197,9 +197,23 @@
     <!-- Set the language of each style to be whatever is defined in Moodle, to assist spell-checking -->
 
     <xsl:choose>
+    <!-- For far-eastern languages, use the mso-fareast-language property -->
+    <xsl:when test="$word_language_fareast = 'true'">
+        <xsl:value-of select="concat('EN-GB;mso-fareast-language:', $word_language_and_locale)"/>
+    </xsl:when>
+    <xsl:otherwise>
+        <xsl:value-of select="$word_language_and_locale"/>
+    </xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<xsl:template match="processing-instruction('replace')[.='insert-language-direction']">
+    <!-- Set the language and text direction of the Word Normal style -->
+
+    <xsl:choose>
     <!-- For Right-to-Left languages, use the mso-bidi-language property -->
     <xsl:when test="$moodle_textdirection = 'rtl'">
-        <xsl:value-of select="concat('EN-GB;&#x0a;&#x09;mso-bidi-language:', $word_language_and_locale, ';&#x0a;&#x09;direction:rtl')"/>
+        <xsl:value-of select="concat('EN-GB;&#x0a;mso-bidi-language:', $word_language_and_locale, ';&#x0a;direction:rtl')"/>
     </xsl:when>
     <!-- For far-eastern languages, use the mso-fareast-language property -->
     <xsl:when test="$word_language_fareast = 'true'">
@@ -209,17 +223,92 @@
         <xsl:value-of select="$word_language_and_locale"/>
     </xsl:otherwise>
     </xsl:choose>
-
 </xsl:template>
 
-<!-- Look for table cells with just text, and wrap them in a Cell paragraph style -->
+<!-- Handle headings -->
+<xsl:template match="htm:h2">
+    <h1 class="MsoHeading1">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </h1>
+</xsl:template>
+<xsl:template match="htm:h3">
+    <h1 class="MsoHeading1">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </h1>
+</xsl:template>
+<xsl:template match="htm:h4">
+    <h2 class="MsoHeading2">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </h2>
+</xsl:template>
+<xsl:template match="htm:h5">
+    <h3 class="MsoHeading3">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </h3>
+</xsl:template>
+<xsl:template match="htm:h6">
+    <h4 class="MsoHeading4">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </h4>
+</xsl:template>
+
+
+<!-- Handle lists -->
+<!-- Top-level lists -->
+<xsl:template match="htm:ul/htm:li">
+    <p class="MsoListBullet">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
+<xsl:template match="htm:ol/htm:li">
+    <p class="MsoListNumber">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
+<xsl:template match="htm:ol/htm:li/htm:p">
+    <p class="MsoListContinue">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
+
+<!-- Second-level lists -->
+<xsl:template match="htm:li/htm:ul/htm:li">
+    <p class="MsoListBullet2">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
+<xsl:template match="htm:li/htm:ol/htm:li">
+    <p class="MsoListNumber2">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
+<xsl:template match="htm:li/htm:ol/htm:li/htm:p">
+    <p class="MsoListContinue2">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
+
+
+<!-- Handle tables -->
+<!-- Look for table body cells with just text, and wrap them in a Body Text paragraph style -->
 <xsl:template match="htm:td">
     <xsl:value-of select="'&#x0a;'"/> <!-- Start each cell on a new line to simplify PHPUnit tests -->
     <td>
         <xsl:call-template name="copyAttributes"/>
         <xsl:choose>
         <xsl:when test="count(*) = 0">
-            <p class="Cell">
+            <p class="MsoBodyText">
                 <xsl:apply-templates/>
             </p>
         </xsl:when>
@@ -236,13 +325,14 @@
     </th>
 </xsl:template>
 
-<!-- Any paragraphs without an explicit class are set to have the Cell style -->
+<!-- Any paragraphs without an explicit class are set to have the Body Text style -->
 <xsl:template match="htm:p[not(@class)]">
-    <p class="Cell">
+    <p class="MsoBodyText">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </p>
 </xsl:template>
+
 
 <!-- Handle a hyperlinked img element -->
 <xsl:template match="htm:a[htm:img]" priority="3">
