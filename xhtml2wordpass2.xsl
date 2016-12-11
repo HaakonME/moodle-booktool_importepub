@@ -227,30 +227,35 @@
 
 <!-- Handle headings -->
 <xsl:template match="htm:h2">
+    <xsl:value-of select="'&#x0a;'"/>
     <h1 class="MsoHeading1">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </h1>
 </xsl:template>
 <xsl:template match="htm:h3">
+    <xsl:value-of select="'&#x0a;'"/>
     <h1 class="MsoHeading1">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </h1>
 </xsl:template>
 <xsl:template match="htm:h4">
+    <xsl:value-of select="'&#x0a;'"/>
     <h2 class="MsoHeading2">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </h2>
 </xsl:template>
 <xsl:template match="htm:h5">
+    <xsl:value-of select="'&#x0a;'"/>
     <h3 class="MsoHeading3">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </h3>
 </xsl:template>
 <xsl:template match="htm:h6">
+    <xsl:value-of select="'&#x0a;'"/>
     <h4 class="MsoHeading4">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
@@ -261,18 +266,22 @@
 <!-- Handle lists -->
 <!-- Top-level lists -->
 <xsl:template match="htm:ul/htm:li">
+    <xsl:value-of select="'&#x0a;'"/>
     <p class="MsoListBullet">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </p>
 </xsl:template>
 <xsl:template match="htm:ol/htm:li">
+    <xsl:value-of select="'&#x0a;'"/>
     <p class="MsoListNumber">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </p>
 </xsl:template>
+<!-- List Continuation paragraph in list item -->
 <xsl:template match="htm:ol/htm:li/htm:p">
+    <xsl:value-of select="'&#x0a;'"/>
     <p class="MsoListContinue">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
@@ -281,26 +290,80 @@
 
 <!-- Second-level lists -->
 <xsl:template match="htm:li/htm:ul/htm:li">
+    <xsl:value-of select="'&#x0a;'"/>
     <p class="MsoListBullet2">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </p>
 </xsl:template>
 <xsl:template match="htm:li/htm:ol/htm:li">
+    <xsl:value-of select="'&#x0a;'"/>
     <p class="MsoListNumber2">
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates/>
     </p>
 </xsl:template>
+<!-- List Continuation paragraph in sublist item -->
 <xsl:template match="htm:li/htm:ol/htm:li/htm:p">
+    <xsl:value-of select="'&#x0a;'"/>
     <p class="MsoListContinue2">
         <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
+<xsl:template match="htm:ul|htm:ol">
+    <xsl:apply-templates/>
+</xsl:template>
+
+
+<!-- Handle Figures -->
+<xsl:template match="htm:p[@class = 'figure-caption']">
+    <xsl:value-of select="'&#x0a;'"/>
+    <p class="MsoCaption">
         <xsl:apply-templates/>
     </p>
 </xsl:template>
 
 
 <!-- Handle tables -->
+<xsl:template match="htm:table">
+    <xsl:value-of select="'&#x0a;'"/>
+    <!-- Move the caption outside the table-->
+    <xsl:if test="htm:caption">
+        <p class="TableTitle">
+            <xsl:apply-templates select="htm:caption"/>
+        </p>
+    </xsl:if>
+    <xsl:comment>Matched table</xsl:comment>
+    <table>
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates select="htm:thead"/>
+        <xsl:apply-templates select="htm:tbody"/>
+    </table>
+</xsl:template>
+
+<!-- Column heading -->
+<xsl:template match="htm:th|htm:td[ancestor::htm:thead]">
+    <xsl:value-of select="'&#x0a;'"/>
+    <th>
+        <p class="TableHead">
+            <xsl:call-template name="copyAttributes"/>
+            <xsl:apply-templates/>
+        </p>
+    </th>
+</xsl:template>
+
+<!-- Row heading -->
+<xsl:template match="htm:th[ancestor::htm:tbody]">
+    <xsl:value-of select="'&#x0a;'"/>
+    <th>
+        <p class="TableRowHead">
+            <xsl:call-template name="copyAttributes"/>
+            <xsl:apply-templates/>
+        </p>
+    </th>
+</xsl:template>
+
 <!-- Look for table body cells with just text, and wrap them in a Body Text paragraph style -->
 <xsl:template match="htm:td">
     <xsl:value-of select="'&#x0a;'"/> <!-- Start each cell on a new line to simplify PHPUnit tests -->
@@ -317,13 +380,20 @@
     </td>
 </xsl:template>
 
-<xsl:template match="htm:th">
-    <xsl:value-of select="'&#x0a;'"/> <!-- Start each cell on a new line to simplify PHPUnit tests -->
-    <th>
-        <xsl:call-template name="copyAttributes"/>
-        <xsl:apply-templates/>
-    </th>
+<!-- Convert Case Studys into a table in Word -->
+<xsl:template match="htm:div[@class = 'casestudy']">
+    <table>
+        <thead><tr><th><h4 class="MsoHeading4"><xsl:apply-templates select="htm:*[1]"/></h4></th></tr></thead>
+        <tbody>
+            <tr>
+                <td>
+                    <xsl:apply-templates select="htm:div[@class = 'whitebox']"/>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </xsl:template>
+
 
 <!-- Any paragraphs without an explicit class are set to have the Body Text style -->
 <xsl:template match="htm:p[not(@class)]">
