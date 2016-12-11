@@ -515,7 +515,7 @@
         <xsl:when test="contains(@src, $pluginfiles_string)">
             <!-- Image exported from Moodle 2.x, i.e. 
                  <img src="@@PLUGINFILE@@/filename.gif"/> <file name="filename.gif" encoding="base64">{base64 data}</file> -->
-            <xsl:value-of select="substring-after(ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ',')"/>
+            <xsl:value-of select="ancestor::htm:div[@class='chapter'][1]//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src"/>
         </xsl:when>
         <xsl:when test="contains(@src, $embeddedimagedata_string)">
             <!-- Image embedded in text as it was imported using Word2MQXML, i.e. <img src="data:image/gif;base64,{base64 data}"/> -->

@@ -472,7 +472,7 @@ function booktool_wordimport_base64_images($contextid, $filearea, $chapterid = n
                 $base64data = base64_encode($filedata->get_content());
                 $filedata = 'data:image/' . $filetype . ';base64,' . $base64data;
                 // Embed the image name and data into the HTML.
-                $imagestring = '<img title="' . $filepath . $filename . '" src="' . $filedata . '"/>';
+                $imagestring .= '<img title="' . $filename . '" src="' . $filedata . '"/>';
             }
         }
     }
