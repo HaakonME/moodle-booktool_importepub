@@ -24,9 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016110701;
+$plugin->version = 2016121101;
 $plugin->requires = 2012062500;
 $plugin->component = 'booktool_wordimport';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.1.1 (Build: 20161107)';
+$plugin->release = '1.1.2 (Build: 20161211)';
 
