@@ -432,7 +432,7 @@
     <!-- Place the hyperlink anchor inside the bookmark anchor -->
     <xsl:variable name="bookmark_name">
         <xsl:value-of select="'MQIMAGE_Q'"/>
-        <xsl:number value="count(preceding::htm:div[@class = 'TableDiv']) + 1" format="0001"/>
+        <xsl:number value="count(preceding::htm:div[@class = 'chapter'][1]) + 1" format="0001"/>
         <xsl:value-of select="'_IID'"/>
         <xsl:choose>
         <xsl:when test="@id">
@@ -454,7 +454,7 @@
 <xsl:template match="htm:img" priority="2">
     <xsl:variable name="bookmark_name">
         <xsl:value-of select="'MQIMAGE_Q'"/>
-        <xsl:number value="count(preceding::htm:div[@class = 'TableDiv']) + 1" format="0001"/>
+        <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
         <xsl:value-of select="'_IID'"/>
         <xsl:choose>
         <xsl:when test="@id">
@@ -484,7 +484,7 @@
 <xsl:template match="htm:img" mode="ImageTable">
     <xsl:variable name="image_id">
         <xsl:value-of select="'Q'"/>
-        <xsl:number value="count(preceding::htm:div[@class = 'TableDiv']) + 1" format="0001"/>
+        <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
         <xsl:value-of select="'_IID'"/>
         <xsl:choose>
         <xsl:when test="@id and @id != ''">
@@ -513,9 +513,9 @@
     <xsl:variable name="image_data">
         <xsl:choose>
         <xsl:when test="contains(@src, $pluginfiles_string)">
-            <!-- Image exported from Moodle 2.x, i.e. 
-                 <img src="@@PLUGINFILE@@/filename.gif"/> <file name="filename.gif" encoding="base64">{base64 data}</file> -->
-            <xsl:value-of select="ancestor::htm:div[@class='chapter'][1]//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src"/>
+            <!-- Standard image exported from Moodle -->
+            <xsl:variable name="src_data" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile']/htm:img[@title = $image_file_name]/@src"/>
+            <xsl:value-of select="substring-after($src_data, ',')"/>
         </xsl:when>
         <xsl:when test="contains(@src, $embeddedimagedata_string)">
             <!-- Image embedded in text as it was imported using Word2MQXML, i.e. <img src="data:image/gif;base64,{base64 data}"/> -->
@@ -579,7 +579,7 @@
         </xsl:choose>
     </xsl:variable>
 
-    <xsl:variable name="image_name" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@title"/>
+    <!--<xsl:variable name="image_name" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@title"/>-->
     <xsl:variable name="image_data" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile']/htm:img/@src"/>
     <xsl:variable name="image_format" select="substring-before(substring-after('data:image/', $image_data), ';')"/>
     <xsl:variable name="image_encoding" select="substring-after(substring-before(',', $image_data), ';')"/>

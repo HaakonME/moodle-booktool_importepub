@@ -92,13 +92,13 @@ if ($mform->is_cancelled()) {
 
     // Read the title and introduction into a string, embedding images.
     $booktext = '<p class="MsoTitle">' . $book->name . "</p>\n";
-    $booktext .= '<div class="chapter">' . $book->intro;
+    $booktext .= '<div class="chapter" id="intro">' . $book->intro;
     $booktext .= booktool_wordimport_base64_images($context->id, 'intro');
     $booktext .= "</div>\n";
 
     // Append all the chapters to the end of the string, again embedding images.
     foreach ($allchapters as $chapter) {
-        $booktext .= '<div class="chapter">';
+        $booktext .= '<div class="chapter" id="' . $chapter->id . '">';
         // Check if the chapter title is duplicated inside the content, and include it if not.
         if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
             $booktext .= "<h1>" . $chapter->title . "</h1>\n";

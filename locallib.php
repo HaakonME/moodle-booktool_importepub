@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 // Development: turn on all debug messages and strict warnings.
-// @codingStandardsIgnoreLine define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
-define('DEBUG_WORDIMPORT', DEBUG_NONE);
+// @codingStandardsIgnoreLine define('DEBUG_WORDIMPORT', E_ALL);
+define('DEBUG_WORDIMPORT', 0);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once(dirname(__FILE__).'/xslemulatexslt.inc');
