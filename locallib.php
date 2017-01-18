@@ -389,6 +389,12 @@ function booktool_wordimport_export( $content ) {
 
     $cleancontent = booktool_wordimport_clean_html_text($content);
 
+    // Set the offset for heading styles, default is h3 becomes Heading 1.
+    $heading1styleOffset = '3';
+    if (strpos($cleancontent, '<div class="lucimoo">')) {
+        $heading1styleOffset = '1';
+    }
+
     // Set parameters for XSLT transformation. Note that we cannot use $arguments though.
     $parameters = array (
         'course_id' => $COURSE->id,
@@ -401,6 +407,7 @@ function booktool_wordimport_export( $content ) {
         'moodle_url' => $CFG->wwwroot . "/",
         'moodle_username' => $USER->username,
         'debug_flag' => debugging('', DEBUG_WORDIMPORT),
+        'heading1stylelevel' => $heading1styleOffset,
         'transformationfailed' => get_string('transformationfailed', 'booktool_wordimport', $exportstylesheet)
     );
 

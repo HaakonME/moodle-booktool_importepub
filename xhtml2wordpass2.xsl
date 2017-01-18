@@ -41,6 +41,7 @@
 <xsl:param name="moodle_release"/>  <!-- 1.9 or 2.x -->
 <xsl:param name="moodle_url"/>      <!-- Location of Moodle site -->
 <xsl:param name="moodle_username"/> <!-- Username for login -->
+<xsl:param name="heading1stylelevel" select="'3'"/>      <!-- H1 heading level in Word -->
 <xsl:param name="debug_flag" select="'0'"/>      <!-- Debugging on or off -->
 
 <xsl:variable name="ucase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'" />
@@ -119,6 +120,10 @@
         <xsl:value-of select="'true'"/>
     </xsl:if>
 </xsl:variable>
+
+<!-- Figure out an offset by which to demote headings e.g. H1  to Heading 3, etc. -->
+<!-- Use a system default, or a document-specific override -->
+<xsl:variable name="heading_demotion_offset" select="$heading1stylelevel - 1"/>
 
 <!-- Match document root node, and read in and process Word-compatible XHTML template -->
 <xsl:template match="/">
@@ -225,42 +230,23 @@
     </xsl:choose>
 </xsl:template>
 
-<!-- Handle headings -->
-<xsl:template match="htm:h2">
+<!-- Handle headings, demoting them by the required offset if necessary -->
+<xsl:template match="htm:h1|htm:h2|htm:h3|htm:h4|htm:h5|htm:h6">
     <xsl:value-of select="'&#x0a;'"/>
-    <h1 class="MsoHeading1">
+    <!-- Demote Heading styles by the required amount -->
+    <xsl:variable name="heading_level" select="substring(local-name(), 2, 1)"/>
+    <xsl:variable name="computed_heading_level" select="$heading_level + $heading_demotion_offset"/>
+    <xsl:variable name="heading_tag" select="concat('h', $computed_heading_level)"/>
+
+    <xsl:element name="{$heading_tag}">
+        <xsl:attribute name="class">
+            <xsl:value-of select="concat('MsoHeading', $computed_heading_level)"/>
+        </xsl:attribute>
         <xsl:call-template name="copyAttributes"/>
-        <xsl:apply-templates/>
-    </h1>
+        <xsl:apply-templates select="node()"/>
+    </xsl:element>
 </xsl:template>
-<xsl:template match="htm:h3">
-    <xsl:value-of select="'&#x0a;'"/>
-    <h1 class="MsoHeading1">
-        <xsl:call-template name="copyAttributes"/>
-        <xsl:apply-templates/>
-    </h1>
-</xsl:template>
-<xsl:template match="htm:h4">
-    <xsl:value-of select="'&#x0a;'"/>
-    <h2 class="MsoHeading2">
-        <xsl:call-template name="copyAttributes"/>
-        <xsl:apply-templates/>
-    </h2>
-</xsl:template>
-<xsl:template match="htm:h5">
-    <xsl:value-of select="'&#x0a;'"/>
-    <h3 class="MsoHeading3">
-        <xsl:call-template name="copyAttributes"/>
-        <xsl:apply-templates/>
-    </h3>
-</xsl:template>
-<xsl:template match="htm:h6">
-    <xsl:value-of select="'&#x0a;'"/>
-    <h4 class="MsoHeading4">
-        <xsl:call-template name="copyAttributes"/>
-        <xsl:apply-templates/>
-    </h4>
-</xsl:template>
+
 
 
 <!-- Handle lists -->
@@ -334,11 +320,12 @@
             <xsl:apply-templates select="htm:caption"/>
         </p>
     </xsl:if>
-    <xsl:comment>Matched table</xsl:comment>
     <table>
         <xsl:call-template name="copyAttributes"/>
         <xsl:apply-templates select="htm:thead"/>
         <xsl:apply-templates select="htm:tbody"/>
+        <!-- Handle case where no thead/tbody is used -->
+        <xsl:apply-templates select="htm:tr"/>
     </table>
 </xsl:template>
 
@@ -429,13 +416,19 @@
 
 <!-- Handle a hyperlinked img element -->
 <xsl:template match="htm:img" mode="linkedImage">
-    <!-- Place the hyperlink anchor inside the bookmark anchor -->
-    <xsl:variable name="bookmark_name">
-        <xsl:value-of select="'MQIMAGE_Q'"/>
-        <xsl:number value="count(preceding::htm:div[@class = 'chapter'][1]) + 1" format="0001"/>
-        <xsl:value-of select="'_IID'"/>
+    <xsl:variable name="chapid">
         <xsl:choose>
-        <xsl:when test="@id">
+        <xsl:when test="ancestor::htm:div[@class = 'chapter']/@id != ''">
+            <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:text>00001</xsl:text>
+        </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="imgnum">
+        <xsl:choose>
+        <xsl:when test="@id and @id != ''">
             <xsl:value-of select="@id"/>
         </xsl:when>
         <xsl:otherwise>
@@ -444,6 +437,9 @@
         </xsl:choose>
     </xsl:variable>
 
+    <xsl:variable name="bookmark_name" select="concat('MQIMAGE_Q', $chapid, '_IID', $imgnum)"/>
+
+    <!-- Place the hyperlink anchor inside the bookmark anchor -->
     <a name="{$bookmark_name}" style="color:red;"/>
     <a href="{../@href}">
         <span style="{concat('mso-bookmark:', $bookmark_name)}">x</span>
@@ -452,12 +448,19 @@
 
 <!-- Handle the img element within the main component text by replacing it with a bookmark as a placeholder -->
 <xsl:template match="htm:img" priority="2">
-    <xsl:variable name="bookmark_name">
-        <xsl:value-of select="'MQIMAGE_Q'"/>
-        <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
-        <xsl:value-of select="'_IID'"/>
+    <xsl:variable name="chapid">
         <xsl:choose>
-        <xsl:when test="@id">
+        <xsl:when test="ancestor::htm:div[@class = 'chapter']/@id != ''">
+            <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:text>00001</xsl:text>
+        </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="imgnum">
+        <xsl:choose>
+        <xsl:when test="@id and @id != ''">
             <xsl:value-of select="@id"/>
         </xsl:when>
         <xsl:otherwise>
@@ -465,6 +468,8 @@
         </xsl:otherwise>
         </xsl:choose>
     </xsl:variable>
+
+    <xsl:variable name="bookmark_name" select="concat('MQIMAGE_Q', $chapid, '_IID', $imgnum)"/>
 
     <xsl:choose>
     <xsl:when test="contains(@src, $pluginfiles_string) or contains(@src, $embeddedimagedata_string)">
@@ -482,10 +487,17 @@
 
 <!-- Create a row in the embedded image table with all image metadata -->
 <xsl:template match="htm:img" mode="ImageTable">
-    <xsl:variable name="image_id">
-        <xsl:value-of select="'Q'"/>
-        <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
-        <xsl:value-of select="'_IID'"/>
+    <xsl:variable name="chapid">
+        <xsl:choose>
+        <xsl:when test="ancestor::htm:div[@class = 'chapter']/@id != ''">
+            <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:text>00001</xsl:text>
+        </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="imgnum">
         <xsl:choose>
         <xsl:when test="@id and @id != ''">
             <xsl:value-of select="@id"/>
@@ -495,12 +507,20 @@
         </xsl:otherwise>
         </xsl:choose>
     </xsl:variable>
+
+    <xsl:variable name="image_id" select="concat('Q', $chapid, '_IID', $imgnum)"/>
+
     <!-- Get image name. If 'PLUGINFILES' not present, the image is embedded in the text, i.e. <img src="data:image/gif;base64,{base64 data}"/> -->
     <xsl:variable name="raw_image_file_name" select="substring-after(@src, $pluginfiles_string)"/>
     <xsl:variable name="image_file_name">
         <xsl:choose>
         <xsl:when test="contains($raw_image_file_name, '%')">
             <xsl:call-template name="url-decode">
+                <xsl:with-param name="str" select="$raw_image_file_name"/>
+            </xsl:call-template>
+        </xsl:when>
+        <xsl:when test="contains($raw_image_file_name, '/')">
+            <xsl:call-template name="remove-path">
                 <xsl:with-param name="str" select="$raw_image_file_name"/>
             </xsl:call-template>
         </xsl:when>
@@ -587,8 +607,31 @@
     <xsl:value-of select="$image_data"/>
 </xsl:template>
 
+<!-- Handle cross-references within the book -->
+<xsl:template match="htm:a[contains(@href, 'chapterid') and contains(@href, '#')]">
+    <xsl:variable name="xref" select="substring-after(@href, '#')"/>
+        <a href="{concat('#', $xref)}">
+            <xsl:apply-templates/>
+        </a>
+</xsl:template>
+
+<!-- Create bookmarks for the cross-reference targets -->
+<xsl:template match="htm:a[@id]">
+    <xsl:variable name="xref_name" select="@id"/>
+
+    <a name="{$xref_name}"/>
+    <a href="{../@href}">
+        <span style="{concat('mso-bookmark:', $xref_name)}">
+            <xsl:apply-templates/>
+        </span>
+    </a>
+</xsl:template>
+
+
 <!-- Delete the supplementary paragraphs containing images within each question component, as they are no longer needed -->
 <xsl:template match="htm:div[@class = 'ImageFile']"/>
+<!-- Delete CSS file links -->
+<xsl:template match="htm:link[@type = 'text/css']"/>
 
 <!-- Preserve comments for style definitions -->
 <xsl:template match="comment()">
@@ -646,6 +689,21 @@ Copied from: https://gist.github.com/nils-werner/721650
         </xsl:choose>
         <xsl:call-template name="url-decode">
             <xsl:with-param name="str" select="substring(substring-after($str,'%'),3)"/>
+        </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+        <xsl:value-of select="$str"/>
+    </xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<xsl:template name="remove-path">
+    <xsl:param name="str"/>
+
+    <xsl:choose>
+    <xsl:when test="contains($str,'/')">
+        <xsl:call-template name="remove-path">
+            <xsl:with-param name="str" select="substring-after($str,'/')"/>
         </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
