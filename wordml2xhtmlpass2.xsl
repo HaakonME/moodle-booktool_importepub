@@ -414,12 +414,15 @@
 
     <!-- Handle tables differently depending on the context (booktool, qformat) -->
     <xsl:template match="x:table">
-        <!-- If in booktool and a table contains a h4 in the first heading cell, then it's a Case Study (for Kimmage DSC) -->
+        <!-- If not in qformat and a table contains a heading in the first heading cell, then it's a textbox -->
+        <xsl:variable name="tblHeadingClass" select="x:thead/x:tr[1]/x:th[1]/x:p[1]/@class"/>
         <xsl:choose>
-        <xsl:when test="x:thead/x:tr[1]/x:th[1]/x:p[1]/@class = 'heading4' and ($pluginname = 'booktool_wordimport' or $pluginname = 'atto_wordimport')">
-            <div class="casestudy">
-                <xsl:apply-templates select="x:thead/x:tr[1]/x:th[1]/x:p[@class = 'heading4']"/>
-                <div class="whitebox">
+        <xsl:when test="starts-with($tblHeadingClass, 'heading') and ($pluginname != 'qformat_wordtable')">
+            <div class="{concat('textbox.', $tblHeadingClass)}">
+                <div class="{concat('textboxHeading.', $tblHeadingClass)}">
+                    <xsl:apply-templates select="x:thead/x:tr[1]/x:th[1]/x:p/node()"/>
+                </div>
+                <div class="{concat('textboxBody.', $tblHeadingClass)}">
                     <xsl:apply-templates select="x:tbody/x:tr[1]/x:td[1]/node()"/>
                 </div>
             </div>
