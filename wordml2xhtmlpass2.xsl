@@ -416,13 +416,14 @@
     <xsl:template match="x:table">
         <!-- If not in qformat and a table contains a heading in the first heading cell, then it's a textbox -->
         <xsl:variable name="tblHeadingClass" select="x:thead/x:tr[1]/x:th[1]/x:p[1]/@class"/>
+        <xsl:variable name="boxType" select="concat('box_type', substring-after($tblHeadingClass, 'heading'))"/>
         <xsl:choose>
         <xsl:when test="starts-with($tblHeadingClass, 'heading') and ($pluginname != 'qformat_wordtable')">
-            <div class="{concat('textbox.', $tblHeadingClass)}">
-                <div class="{concat('textboxHeading.', $tblHeadingClass)}">
-                    <xsl:apply-templates select="x:thead/x:tr[1]/x:th[1]/x:p/node()"/>
+            <div class="{concat($boxType, '_wrapper')}">
+                <div class="{concat($boxType, '_head')}">
+                    <xsl:apply-templates select="x:thead/x:tr[1]/x:th[1]/x:p"/>
                 </div>
-                <div class="{concat('textboxBody.', $tblHeadingClass)}">
+                <div class="{concat($boxType, '_body')}">
                     <xsl:apply-templates select="x:tbody/x:tr[1]/x:td[1]/node()"/>
                 </div>
             </div>
