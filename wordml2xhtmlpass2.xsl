@@ -527,6 +527,32 @@
         </th>
     </xsl:template>
 
+    <!-- Block quotes - wrap them in a blockquote wrapper -->
+    <xsl:template match="x:p[@class = 'blockquote' or @class = 'block quote']">
+        <xsl:if test="not(starts-with(preceding-sibling::x:p[1]/@class, 'blockquote'))">
+            <blockquote>
+                <p>
+                    <xsl:apply-templates select="@*"/>
+                    <xsl:apply-templates/>
+                </p>
+                <!-- Recursively process following paragraphs until we hit one that isn't a block quote -->
+                <xsl:apply-templates select="following::x:p[1]" mode="blockQuote"/>
+            </blockquote>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template match="x:p" mode="blockQuote">
+        <xsl:if test="starts-with(@class, 'blockquote')">
+            <xsl:value-of select="$debug_newline"/>
+            <p>
+                <xsl:apply-templates select="@*"/>
+                <xsl:apply-templates/>
+            </p>
+            <!-- Recursively process following paragraphs until we hit one that isn't a blockQuote -->
+            <xsl:apply-templates select="following::x:p[1]" mode="blockQuote"/>
+        </xsl:if>
+    </xsl:template>
+
     <!-- Process Figure captions, so that they can be explicitly styled -->
     <xsl:template match="x:p[@class = 'caption' or @class = 'MsoCaption']">
         <p class="figure-caption"><xsl:apply-templates/></p>
