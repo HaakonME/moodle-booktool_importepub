@@ -24,9 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017020301;              // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2017020401;              // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires = 2012062500;               // Requires Moodle 2.3 or higher, when Book was added to core.
 $plugin->component = 'booktool_wordimport';   // Full name of the plugin (used for diagnostics).
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.1.6 (Build: 20170203)'; // Human readable version information.
+$plugin->release = '1.1.7 (Build: 20170204)'; // Human readable version information.
 
