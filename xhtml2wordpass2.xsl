@@ -121,9 +121,9 @@
     </xsl:if>
 </xsl:variable>
 
-<!-- Figure out an offset by which to demote headings e.g. H1  to Heading 3, etc. -->
+<!-- Figure out an offset by which to promote headings e.g. H3  to Heading 1, etc. -->
 <!-- Use a system default, or a document-specific override -->
-<xsl:variable name="heading_demotion_offset" select="$heading1stylelevel - 1"/>
+<xsl:variable name="heading_promotion_offset" select="$heading1stylelevel - 1"/>
 
 <!-- Match document root node, and read in and process Word-compatible XHTML template -->
 <xsl:template match="/">
@@ -230,12 +230,20 @@
     </xsl:choose>
 </xsl:template>
 
-<!-- Handle headings, demoting them by the required offset if necessary -->
-<xsl:template match="htm:h1|htm:h2|htm:h3|htm:h4|htm:h5|htm:h6">
+<!-- Pass h1 heading through, as it is the chapter title -->
+<xsl:template match="htm:h1">
+    <h1 class="'MsoHeading1'">
+        <xsl:call-template name="copyAttributes"/>
+        <xsl:apply-templates select="node()"/>
+    </h1>
+</xsl:template>
+
+<!-- Handle headings h3 to h5 by promoting them to h1 to h3 -->
+<xsl:template match="htm:h3|htm:h4|htm:h5">
     <xsl:value-of select="'&#x0a;'"/>
-    <!-- Demote Heading styles by the required amount -->
+    <!-- Promote Heading styles by the required amount -->
     <xsl:variable name="heading_level" select="substring(local-name(), 2, 1)"/>
-    <xsl:variable name="computed_heading_level" select="$heading_level + $heading_demotion_offset"/>
+    <xsl:variable name="computed_heading_level" select="$heading_level - $heading_promotion_offset"/>
     <xsl:variable name="heading_tag" select="concat('h', $computed_heading_level)"/>
 
     <xsl:element name="{$heading_tag}">
@@ -246,7 +254,6 @@
         <xsl:apply-templates select="node()"/>
     </xsl:element>
 </xsl:template>
-
 
 
 <!-- Handle lists -->
@@ -368,19 +375,79 @@
 </xsl:template>
 
 <!-- Convert Case Studys into a table in Word -->
-<xsl:template match="htm:div[@class = 'casestudy']">
-    <table>
-        <thead><tr><th><h4 class="MsoHeading4"><xsl:apply-templates select="htm:*[1]"/></h4></th></tr></thead>
+<xsl:template match="htm:div[@class = 'casestudy' or (starts-with(@class, 'box_type') and contains(@class, 'wrapper'))]">
+    <table class="{@class}">
+        <thead>
+            <tr>
+                <th>
+                    <xsl:apply-templates select="htm:div[contains(@class, 'box_type') and contains(@class, '_head')]"/>
+                </th>
+            </tr>
+        </thead>
         <tbody>
             <tr>
                 <td>
-                    <xsl:apply-templates select="htm:div[@class = 'whitebox']"/>
+                    <xsl:apply-templates select="htm:div[(contains(@class, 'box_type') and contains(@class, '_body')) or @class = 'whitebox']"/>
                 </td>
             </tr>
         </tbody>
     </table>
 </xsl:template>
 
+<!-- Handle textbox headings, promoting them by the required offset based on the box type number -->
+<xsl:template match="htm:h6[parent::htm:div[contains(@class, 'box_type')]]">
+    <!--
+    box_type4_head/h6 = h4/Heading 4
+    box_type5_head/h6 = h5/Heading 5
+    box_type6_head/h6 = h6/Heading 6
+    box_type7_head/h6 = p/Heading7
+    -->
+    <!-- SeHeading styles by the required amount -->
+    <xsl:variable name="boxtype_number" select="substring(substring-after(../@class, 'box_type'), 1, 1)"/>
+    <xsl:variable name="heading_tag" select="concat('h', $boxtype_number)"/>
+
+    <xsl:choose>
+        <xsl:when test="$boxtype_number &gt; 6">
+            <p>
+                <xsl:attribute name="class">
+                    <xsl:value-of select="concat('MsoHeading', $boxtype_number)"/>
+                </xsl:attribute>
+                <xsl:attribute name="style">
+                    <xsl:value-of select="concat('mso-outline-level:', $boxtype_number)"/>
+                </xsl:attribute>
+                <xsl:call-template name="copyAttributes"/>
+                <xsl:apply-templates select="node()"/>
+            </p>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:element name="{$heading_tag}">
+                <xsl:attribute name="class">
+                    <xsl:value-of select="concat('MsoHeading', $boxtype_number)"/>
+                </xsl:attribute>
+                <xsl:call-template name="copyAttributes"/>
+                <xsl:apply-templates select="node()"/>
+            </xsl:element>
+        </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+
+<!-- Ignore the head and body container divs -->
+<xsl:template match="htm:div[contains(@class, 'box_type') and (contains(@class, '_head') or contains(@class, '_body'))]">
+    <xsl:apply-templates/>
+</xsl:template>
+
+
+<!-- Any paragraphs without an explicit class are set to have the Body Text style -->
+<xsl:template match="htm:blockquote">
+    <xsl:apply-templates mode="blockQuote"/>
+</xsl:template>
+
+<xsl:template match="htm:p" mode="blockQuote">
+    <p class="BlockQuote">
+        <xsl:apply-templates/>
+    </p>
+</xsl:template>
 
 <!-- Any paragraphs without an explicit class are set to have the Body Text style -->
 <xsl:template match="htm:p[not(@class)]">
