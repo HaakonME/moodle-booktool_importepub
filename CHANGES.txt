@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2017/02/19    1.1.8     Support setting the mapping between Word heading style and HTML heading element
 2017/02/04    1.1.7     Handle block quotations, and textbox exports
 2017/02/02    1.1.6     Handle tables used as textboxes in a generic way
 2017/01/18    1.1.5     Handle bookmarks/cross-references, improve image export and map heading levels

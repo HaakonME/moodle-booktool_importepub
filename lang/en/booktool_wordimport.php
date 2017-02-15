@@ -45,3 +45,8 @@ $string['transformationfailed'] = 'XSLT transformation failed (<b>{$a}</b>)';
 $string['xsltunavailable'] = 'You need the XSLT library installed in PHP to save this Word file';
 $string['stylesheetunavailable'] = 'XSLT Stylesheet <b>{$a}</b> is not available';
 $string['cannotopentempfile'] = 'Cannot open temporary file <b>{$a}</b>';
+
+// Strings used in settings.
+$string['settings'] = 'Word file import settings';
+$string['heading1stylelevel'] = 'Heading element level for Heading 1 style';
+$string['heading1stylelevel_desc'] = 'HTML heading element level to which the Word "Heading 1" style should be mapped';
