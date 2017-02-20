@@ -24,12 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// Create the book Word import settings page.
-$pagetitle = get_string('modulename', 'book');
-$settings = new admin_settingpage('modsettingbook', $pagetitle, 'moodle/site:config');
-
-
-$ADMIN->add('modsettingbook', new admin_category('booktool_wordimport', new lang_string('pluginname', 'booktool_wordimport')));
+$ADMIN->add('modsettingbook_wordimport', new admin_category('booktool_wordimport', new lang_string('pluginname', 'booktool_wordimport')));
 
 $settings = new admin_settingpage('booktool_wordimport_settings', new lang_string('settings', 'booktool_wordimport'));
 
