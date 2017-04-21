@@ -395,14 +395,13 @@
 </xsl:template>
 
 <!-- Handle panel headings, promoting them by the required offset based on the panel type number -->
-<xsl:template match="htm:h6[parent::htm:div[contains(@class, 'box_type')]]">
+<xsl:template match="htm:h6[parent::htm:div[contains(@class, 'box_type') or contains(@class, 'panel-heading')]]">
     <!--
     box_type4_head/h6 = h4/Heading 4
     box_type5_head/h6 = h5/Heading 5
     box_type6_head/h6 = h6/Heading 6
     box_type7_head/h6 = p/Heading7
 
-    panel-type3/h5 = h3/Heading 3
     panel-type4/h6 = h4/Heading 4
     panel-type5/h6 = h5/Heading 5
     panel-type6/h6 = h6/Heading 6
@@ -411,7 +410,19 @@
     panel-type9/h6 = p/Heading9
     -->
     <!-- SeHeading styles by the required amount -->
-    <xsl:variable name="paneltypenumber" select="substring(substring-after(../@class, 'panel-type'), 1, 1)"/>
+    <xsl:variable name="paneltypenumber">
+        <xsl:choose>
+        <xsl:when test="parent::htm:div[contains(@class, 'box_type')]">
+            <xsl:value-of select="substring(substring-after(../@class, 'box_type'), 1, 1)"/>
+        </xsl:when>
+        <xsl:when test="parent::htm:div[contains(@class, 'panel-heading')]">
+            <xsl:value-of select="substring(substring-after(ancestor::htm:div[contains(@class, 'panel-type')]/@class, 'panel-type'), 1, 1)"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:value-of select="'6'"/>
+        </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
     <xsl:variable name="heading_tag" select="concat('h', $paneltypenumber)"/>
 
     <xsl:choose>

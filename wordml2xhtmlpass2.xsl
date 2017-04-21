@@ -511,7 +511,7 @@
                 <div class="panel-heading">
                     <xsl:apply-templates select="x:thead/x:tr[1]/x:th[1]/x:p"/>
                 </div>
-                <div class="panel_body">
+                <div class="panel-body">
                     <xsl:apply-templates select="x:tbody/x:tr[1]/x:td[1]/node()"/>
                 </div>
             </div>
