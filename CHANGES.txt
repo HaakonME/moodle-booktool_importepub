@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2017/04/21    1.2.0     Use Bootstrap panel class for textboxes, use canonical tempdir reference
 2017/02/19    1.1.8     Support setting the mapping between Word heading style and HTML heading element
 2017/02/04    1.1.7     Handle block quotations, and textbox exports
 2017/02/02    1.1.6     Handle tables used as textboxes in a generic way

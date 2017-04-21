@@ -502,16 +502,16 @@
 
     <!-- Handle tables differently depending on the context (booktool, qformat) -->
     <xsl:template match="x:table">
-        <!-- If not in qformat and a table contains a heading in the first heading cell, then it's a textbox -->
+        <!-- If not in qformat and a table contains a heading in the first heading cell, then it's a text panel, and we use the Bootstrap panel class -->
         <xsl:variable name="tblHeadingClass" select="x:thead/x:tr[1]/x:th[1]/x:p[1]/@class"/>
-        <xsl:variable name="boxType" select="concat('box_type', substring-after($tblHeadingClass, 'heading'))"/>
+        <xsl:variable name="panelType" select="concat('panel-type', substring-after($tblHeadingClass, 'heading'))"/>
         <xsl:choose>
         <xsl:when test="starts-with($tblHeadingClass, 'heading') and ($pluginname != 'qformat_wordtable')">
-            <div class="{concat($boxType, '_wrapper')}">
-                <div class="{concat($boxType, '_head')}">
+            <div class="{concat('panel ', $panelType)}">
+                <div class="panel-heading">
                     <xsl:apply-templates select="x:thead/x:tr[1]/x:th[1]/x:p"/>
                 </div>
-                <div class="{concat($boxType, '_body')}">
+                <div class="panel_body">
                     <xsl:apply-templates select="x:tbody/x:tr[1]/x:td[1]/node()"/>
                 </div>
             </div>

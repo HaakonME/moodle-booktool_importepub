@@ -375,45 +375,53 @@
 </xsl:template>
 
 <!-- Convert Case Studys into a table in Word -->
-<xsl:template match="htm:div[@class = 'casestudy' or (starts-with(@class, 'box_type') and contains(@class, 'wrapper'))]">
+<xsl:template match="htm:div[@class = 'casestudy' or (starts-with(@class, 'box_type') and contains(@class, 'wrapper')) or contains(@class, 'panel-type')]">
     <table class="{@class}">
         <thead>
             <tr>
                 <th>
-                    <xsl:apply-templates select="htm:div[contains(@class, 'box_type') and contains(@class, '_head')]"/>
+                    <xsl:apply-templates select="htm:div[contains(@class, 'panel-heading') or (contains(@class, 'box_type') and contains(@class, '_head'))]"/>
                 </th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>
-                    <xsl:apply-templates select="htm:div[(contains(@class, 'box_type') and contains(@class, '_body')) or @class = 'whitebox']"/>
+                    <xsl:apply-templates select="htm:div[(contains(@class, 'box_type') and contains(@class, '_body')) or @class = 'whitebox' or contains(@class, 'panel-body')]"/>
                 </td>
             </tr>
         </tbody>
     </table>
 </xsl:template>
 
-<!-- Handle textbox headings, promoting them by the required offset based on the box type number -->
+<!-- Handle panel headings, promoting them by the required offset based on the panel type number -->
 <xsl:template match="htm:h6[parent::htm:div[contains(@class, 'box_type')]]">
     <!--
     box_type4_head/h6 = h4/Heading 4
     box_type5_head/h6 = h5/Heading 5
     box_type6_head/h6 = h6/Heading 6
     box_type7_head/h6 = p/Heading7
+
+    panel-type3/h5 = h3/Heading 3
+    panel-type4/h6 = h4/Heading 4
+    panel-type5/h6 = h5/Heading 5
+    panel-type6/h6 = h6/Heading 6
+    panel-type7/h6 = p/Heading7
+    panel-type8/h6 = p/Heading8
+    panel-type9/h6 = p/Heading9
     -->
     <!-- SeHeading styles by the required amount -->
-    <xsl:variable name="boxtype_number" select="substring(substring-after(../@class, 'box_type'), 1, 1)"/>
-    <xsl:variable name="heading_tag" select="concat('h', $boxtype_number)"/>
+    <xsl:variable name="paneltypenumber" select="substring(substring-after(../@class, 'panel-type'), 1, 1)"/>
+    <xsl:variable name="heading_tag" select="concat('h', $paneltypenumber)"/>
 
     <xsl:choose>
-        <xsl:when test="$boxtype_number &gt; 6">
+        <xsl:when test="$paneltypenumber &gt; 6">
             <p>
                 <xsl:attribute name="class">
-                    <xsl:value-of select="concat('MsoHeading', $boxtype_number)"/>
+                    <xsl:value-of select="concat('MsoHeading', $paneltypenumber)"/>
                 </xsl:attribute>
                 <xsl:attribute name="style">
-                    <xsl:value-of select="concat('mso-outline-level:', $boxtype_number)"/>
+                    <xsl:value-of select="concat('mso-outline-level:', $paneltypenumber)"/>
                 </xsl:attribute>
                 <xsl:call-template name="copyAttributes"/>
                 <xsl:apply-templates select="node()"/>
@@ -422,7 +430,7 @@
         <xsl:otherwise>
             <xsl:element name="{$heading_tag}">
                 <xsl:attribute name="class">
-                    <xsl:value-of select="concat('MsoHeading', $boxtype_number)"/>
+                    <xsl:value-of select="concat('MsoHeading', $paneltypenumber)"/>
                 </xsl:attribute>
                 <xsl:call-template name="copyAttributes"/>
                 <xsl:apply-templates select="node()"/>
@@ -432,8 +440,8 @@
 </xsl:template>
 
 
-<!-- Ignore the head and body container divs -->
-<xsl:template match="htm:div[contains(@class, 'box_type') and (contains(@class, '_head') or contains(@class, '_body'))]">
+<!-- Ignore the panel heading and body container divs -->
+<xsl:template match="htm:div[(contains(@class, 'box_type') and (contains(@class, '_head') or contains(@class, '_body'))) or contains(@class, 'panel-heading') or contains(@class, 'panel-body')]">
     <xsl:apply-templates/>
 </xsl:template>
 
