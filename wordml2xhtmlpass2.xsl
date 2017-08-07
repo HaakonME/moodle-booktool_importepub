@@ -405,18 +405,6 @@
         </xsl:choose>
     </xsl:template>
 
-    <xsl:template match="x:p" mode="blockQuote">
-        <xsl:if test="starts-with(@class, 'blockquote')">
-            <xsl:value-of select="$debug_newline"/>
-            <p>
-                <xsl:apply-templates select="@*"/>
-                <xsl:apply-templates/>
-            </p>
-            <!-- Recursively process following paragraphs until we hit one that isn't a blockQuote -->
-            <xsl:apply-templates select="following::x:p[1]" mode="blockQuote"/>
-        </xsl:if>
-    </xsl:template>
-
     <!-- Remove redundant style information, retaining only borders and widths on table cells, and text direction in paragraphs-->
     <xsl:template match="@style[not(parent::x:table) and not(parent::x:span)]" priority="1">
         <xsl:variable name="processedStyle">
@@ -617,15 +605,64 @@
 
     <!-- Block quotes - wrap them in a blockquote wrapper -->
     <xsl:template match="x:p[@class = 'blockquote' or @class = 'block quote']">
+        <xsl:variable name="paraClass" select="@class"/>
         <xsl:if test="not(starts-with(preceding-sibling::x:p[1]/@class, 'blockquote'))">
             <blockquote>
                 <p>
-                    <xsl:apply-templates select="@*"/>
+                    <xsl:for-each select="@*">
+                        <xsl:if test="name() != 'class'">
+                            <xsl:apply-templates select="."/>
+                        </xsl:if>
+                    </xsl:for-each>
                     <xsl:apply-templates/>
                 </p>
-                <!-- Recursively process following paragraphs until we hit one that isn't a block quote -->
-                <xsl:apply-templates select="following::x:p[1]" mode="blockQuote"/>
+                <!-- Recursively process following paragraphs until we hit one that isn't the same as this one -->
+                <xsl:apply-templates select="following::x:p[1]" mode="paraClassSequence">
+                    <xsl:with-param name="paraClass" select="$paraClass"/>
+                </xsl:apply-templates>
             </blockquote>
+        </xsl:if>
+    </xsl:template>
+
+    <!-- Bootstrap framework alerts - wrap them in a div/@class="alert" wrapper -->
+    <xsl:template match="x:p[@class = 'danger' or @class = 'info' or @class = 'success' or @class = 'warning']">
+        <xsl:variable name="paraClass" select="@class"/>
+        <xsl:if test="not(starts-with(preceding-sibling::x:p[1]/@class, $paraClass))">
+            <div class="{concat('alert alert-', $paraClass)}">
+                <p>
+                    <xsl:for-each select="@*">
+                        <xsl:if test="name() != 'class'">
+                            <xsl:apply-templates select="."/>
+                        </xsl:if>
+                    </xsl:for-each>
+                    <xsl:apply-templates/>
+                </p>
+                <!-- Recursively process following paragraphs until we hit one that isn't the same as this one -->
+                <xsl:apply-templates select="following::x:p[1]" mode="paraClassSequence">
+                    <xsl:with-param name="paraClass" select="$paraClass"/>
+                </xsl:apply-templates>
+            </div>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template match="x:p" mode="paraClassSequence">
+        <xsl:param name="paraClass"/>
+
+        <!-- Process this paragraph if it has the same class as the last one -->
+        <xsl:if test="starts-with(@class, $paraClass)">
+            <xsl:value-of select="$debug_newline"/>
+            <p>
+                <xsl:for-each select="@*">
+                    <xsl:if test="name() != 'class'">
+                        <xsl:apply-templates select="."/>
+                    </xsl:if>
+                </xsl:for-each>
+                <xsl:apply-templates/>
+            </p>
+            <!-- Recursively process following paragraphs until we hit one that isn't the same as this one -->
+            <xsl:apply-templates select="following::x:p[1]" mode="paraClassSequence">
+                <xsl:with-param name="paraClass" select="$paraClass"/>
+            </xsl:apply-templates>
         </xsl:if>
     </xsl:template>
 

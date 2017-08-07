@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2017/08/07    1.2.1     Handle Bootstrap Alert components
 2017/04/21    1.2.0     Use Bootstrap panel class for textboxes, use canonical tempdir reference
 2017/02/19    1.1.8     Support setting the mapping between Word heading style and HTML heading element
 2017/02/04    1.1.7     Handle block quotations, and textbox exports
