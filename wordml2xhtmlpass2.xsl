@@ -309,7 +309,7 @@
                 </li>
 
                 <!-- Recursively process following paragraphs until we hit one that isn't a list item -->
-                <xsl:apply-templates select="following::x:p[1]" mode="listItem">
+                <xsl:apply-templates select="following-sibling::x:p[1]" mode="listItem">
                     <xsl:with-param name="listType" select="'listnumber'"/>
                 </xsl:apply-templates>
             </ol>
@@ -329,7 +329,7 @@
                 </li>
 
                 <!-- Recursively process following paragraphs until we hit one that isn't a list item -->
-                <xsl:apply-templates select="following::x:p[1]" mode="listItem">
+                <xsl:apply-templates select="following-sibling::x:p[1]" mode="listItem">
                     <xsl:with-param name="listType" select="'listbullet'"/>
                 </xsl:apply-templates>
             </ul>
@@ -347,8 +347,9 @@
             <li>
                 <xsl:apply-templates/>
             </li>
+
                 <!-- Recursively process following paragraphs until we hit one that isn't a list item -->
-                <xsl:apply-templates select="following::x:p[1]" mode="listItem">
+                <xsl:apply-templates select="following-sibling::x:p[1]" mode="listItem">
                     <xsl:with-param name="listType" select="$listType"/>
                 </xsl:apply-templates>
         </xsl:when>
@@ -386,7 +387,7 @@
             <pre>
                 <xsl:apply-templates/>
                 <!-- Recursively process following paragraphs until we hit one that isn't a list item -->
-                <xsl:apply-templates select="following::x:p[1]" mode="preformatted"/>
+                <xsl:apply-templates select="following-sibling::x:p[1]" mode="preformatted"/>
             </pre>
         </xsl:if>
         <!-- Silently ignore the item if it is not the first -->
@@ -400,7 +401,7 @@
             <xsl:value-of select="'&#x0a;'"/>
                 <xsl:apply-templates/>
                 <!-- Recursively process following paragraphs until we hit one that isn't a pre -->
-                <xsl:apply-templates select="following::x:p[1]"  mode="preformatted"/>
+                <xsl:apply-templates select="following-sibling::x:p[1]"  mode="preformatted"/>
         </xsl:when>
         </xsl:choose>
     </xsl:template>
@@ -617,7 +618,7 @@
                     <xsl:apply-templates/>
                 </p>
                 <!-- Recursively process following paragraphs until we hit one that isn't the same as this one -->
-                <xsl:apply-templates select="following::x:p[1]" mode="paraClassSequence">
+                <xsl:apply-templates select="following-sibling::x:p[1]" mode="paraClassSequence">
                     <xsl:with-param name="paraClass" select="$paraClass"/>
                 </xsl:apply-templates>
             </blockquote>
@@ -638,7 +639,7 @@
                     <xsl:apply-templates/>
                 </p>
                 <!-- Recursively process following paragraphs until we hit one that isn't the same as this one -->
-                <xsl:apply-templates select="following::x:p[1]" mode="paraClassSequence">
+                <xsl:apply-templates select="following-sibling::x:p[1]" mode="paraClassSequence">
                     <xsl:with-param name="paraClass" select="$paraClass"/>
                 </xsl:apply-templates>
             </div>
@@ -660,7 +661,7 @@
                 <xsl:apply-templates/>
             </p>
             <!-- Recursively process following paragraphs until we hit one that isn't the same as this one -->
-            <xsl:apply-templates select="following::x:p[1]" mode="paraClassSequence">
+            <xsl:apply-templates select="following-sibling::x:p[1]" mode="paraClassSequence">
                 <xsl:with-param name="paraClass" select="$paraClass"/>
             </xsl:apply-templates>
         </xsl:if>
