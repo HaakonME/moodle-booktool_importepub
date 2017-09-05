@@ -75,6 +75,8 @@ class booktool_wordimport_form extends moodleform {
     /**
      * Define Word import form validation
      *
+     * @param array $data
+     * @param array $files
      * @return array
      */
     public function validation($data, $files) {

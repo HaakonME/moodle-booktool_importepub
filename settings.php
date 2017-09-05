@@ -28,7 +28,7 @@ if ($ADMIN->fulltree) {
     // What HTML heading element should be used for the Word Heading 1 style?
     $name = new lang_string('heading1stylelevel', 'booktool_wordimport');
     $desc = new lang_string('heading1stylelevel_desc', 'booktool_wordimport');
-    // Default to h3
+    // Default to h3.
     $default = 3;
     $options = array_combine(range(1, 6), array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'));
 
