@@ -56,6 +56,7 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4.
  * @return void
  */
 function booktool_wordimport_import_word($wordfilename, $book, $context, $splitonsubheadings) {
+    global $CFG;
     // Convert the Word file content into XHTML and an array of images.
     $imagesforzipping = array();
     $htmlcontent = booktool_wordimport_convert_to_xhtml($wordfilename, $imagesforzipping);
