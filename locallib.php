@@ -79,19 +79,21 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
     // Split the single HTML file into multiple chapters based on h1 elements.
     $h1matches = null;
     $chaptermatches = null;
-    // Grab title and contents of each section.
+    // Grab title and contents of each 'Heading 1' section, which is mapped to h3.
     $chaptermatches = preg_split('#<h3>.*</h3>#isU', $htmlcontent);
     preg_match_all('#<h3>(.*)</h3>#i', $htmlcontent, $h1matches);
     // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": n chapters = " . count($chaptermatches), DEBUG_WORDIMPORT);
 
-    // If no h1 elements are present, treat the whole file as a single chapter.
+    // If no h3 elements are present, treat the whole file as a single chapter.
     if (count($chaptermatches) == 1) {
         $zipfile->addFromString("index.htm", $htmlcontent);
     }
 
     // Create a separate HTML file in the Zip file for each section of content.
     for ($i = 1; $i < count($chaptermatches); $i++) {
-        $chaptitle = $h1matches[1][$i - 1];
+        // Remove any tags from heading, as it prevents proper import of the chapter title.
+        $chaptitle = strip_tags($h1matches[1][$i - 1]);
+        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chaptitle = " . $chaptitle, DEBUG_WORDIMPORT);
         $chapcontent = $chaptermatches[$i];
         $chapfilename = sprintf("index%02d.htm", $i);
 
@@ -117,7 +119,7 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
 
             // Save each subsection to a separate file.
             for ($j = 1; $j < count($subchaptermatches); $j++) {
-                $subchaptitle = $h2matches[1][$j - 1];
+                $subchaptitle = strip_tags($h2matches[1][$j - 1]);
                 $subchapcontent = $subchaptermatches[$j];
                 $subsectionfilename = sprintf("index%02d_%02d_sub.htm", $i, $j);
                 $htmlfilecontent = "<html><head><title>{$subchaptitle}</title></head>" .

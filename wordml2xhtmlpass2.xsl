@@ -337,6 +337,26 @@
         <!-- Silently ignore the item if it is not the first -->
     </xsl:template>
 
+    <!-- Try and handle unstyled bullet lists which use a hidden listparagraph -->
+    <xsl:template match="x:p[starts-with(@class, 'listparagraph')]">
+        <xsl:if test="not(starts-with(preceding-sibling::x:p[1]/@class, 'listparagraph'))">
+            <!-- First item in a list, so wrap it in a ul, and drag in the rest of the items -->
+            <xsl:value-of select="$debug_newline"/>
+            <ul>
+                <xsl:value-of select="$debug_newline"/>
+                <li>
+                    <xsl:apply-templates/>
+                </li>
+
+                <!-- Recursively process following paragraphs until we hit one that isn't a list item -->
+                <xsl:apply-templates select="following-sibling::x:p[1]" mode="listItem">
+                    <xsl:with-param name="listType" select="'listparagraph'"/>
+                </xsl:apply-templates>
+            </ul>
+        </xsl:if>
+        <!-- Silently ignore the item if it is not the first -->
+    </xsl:template>
+
     <!-- Output a list item only if it has the right class -->
     <xsl:template match="x:p" mode="listItem">
         <xsl:param name="listType"/>
@@ -437,6 +457,9 @@
         </xsl:variable>
 
         <xsl:choose>
+        <xsl:when test="starts-with($stylePropertyFirst, 'line-height:1;') or starts-with($stylePropertyFirst, 'line-height:1.15;')">
+            <!-- Ignore line-height if it is exactly 1 or 1.15 -->
+        </xsl:when>
         <xsl:when test="starts-with($stylePropertyFirst, 'margin-') or starts-with($stylePropertyFirst, 'page-break')">
             <!-- Ignore margin or page-break settings -->
         </xsl:when>
