@@ -19,7 +19,7 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2013-2018 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -74,13 +74,27 @@ $mform = new booktool_importepub_form(null, array('id' => $id,
 
 if ($mform->is_cancelled()) {
     if (empty($chapter->id)) {
-        redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id");
+        redirect($CFG->wwwroot . "/mod/book/view.php?id=$cm->id");
     } else {
-        redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
+        redirect($CFG->wwwroot . "/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
 } else if ($data = $mform->get_data()) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('importchapters', 'booktool_importepub'));
+
+    $settings = new stdClass();
+    $settings->enablestyles = property_exists($data, 'enablestylesheets');
+    $settings->preventsmallfonts = property_exists($data, 'preventsmallfonts');
+    $settings->ignorefontfamily = property_exists($data, 'ignorefontfamily');
+    $settings->tag = $data->tag;
+    if (strlen($data->classes) > 0) {
+        $settings->classes = preg_split('/\s+/', $data->classes,
+                                        -1, PREG_SPLIT_NO_EMPTY);
+    } else {
+        $settings->classes = array();
+    }
+    $settings->header = $data->header;
+    $settings->footer = $data->footer;
 
     $fs = get_file_storage();
     $draftid = file_get_submitted_draft_itemid('importfile');
@@ -90,9 +104,8 @@ if ($mform->is_cancelled()) {
         redirect($PAGE->url);
     }
     $file = reset($files);
-    $enablestylesheets = property_exists($data, 'enablestylesheets');
-    toolbook_importepub_import_epub($file, $book, $context,
-                                    $enablestylesheets);
+
+    toolbook_importepub_import_epub($file, $book, $context, $settings);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php',
                                                  array('id' => $id)));

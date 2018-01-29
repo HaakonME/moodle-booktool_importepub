@@ -19,7 +19,7 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013-2016 Mikael Ylikoski
+ * @copyright  2013-2018 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,16 +28,15 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once(dirname(__FILE__).'/lib.php');
-require_once(dirname(__FILE__).'/CSS/CSSParser.php');
-require_once($CFG->dirroot.'/course/lib.php');
-require_once($CFG->dirroot.'/mod/book/lib.php');
-require_once($CFG->dirroot.'/mod/book/locallib.php');
-require_once($CFG->dirroot.'/mod/book/tool/importhtml/locallib.php');
+require_once(dirname(__FILE__) . '/lib.php');
+require_once(dirname(__FILE__) . '/CSS/CSSParser.php');
+require_once($CFG->dirroot . '/course/lib.php');
+require_once($CFG->dirroot . '/mod/book/lib.php');
+require_once($CFG->dirroot . '/mod/book/locallib.php');
 
 if (!function_exists('create_module')) {        // Moodle <= 2.4
     function create_module($data) {
-        return null;
+        return NULL;
     }
 }
 
@@ -49,7 +48,7 @@ if (!function_exists('create_module')) {        // Moodle <= 2.4
  * @param int $section
  * @param string $title
  */
-function toolbook_importepub_add_book($module, $course, $section, $title = null) {
+function toolbook_importepub_add_book($module, $course, $section, $title = NULL) {
     $data = new stdClass();
 
     if ($title) {
@@ -58,7 +57,7 @@ function toolbook_importepub_add_book($module, $course, $section, $title = null)
         $data->name = 'Untitled';
     }
     $data->numbering = 0;
-    $data->customtitles = 0;
+    $data->customtitles = 1;
     $data->revision = 0;
     $data->timecreated = time();
     $data->timemodified = $data->timecreated;
@@ -73,7 +72,8 @@ function toolbook_importepub_add_book($module, $course, $section, $title = null)
 
     $data->module = $module->id;
     $data->modulename = $module->name;
-    $data->visible = true;
+    $data->visible = TRUE;
+    $data->visibleoncoursepage = TRUE;
     $data->groupmode = $course->groupmode;
     $data->groupingid = $course->defaultgroupingid;
     $data->groupmembersonly = 0;
@@ -85,9 +85,12 @@ function toolbook_importepub_add_book($module, $course, $section, $title = null)
     $data->conditiongradegroup = array();
     $data->conditionfieldgroup = array();
 
+    $data->completiongradeitemnumber = NULL;
+    $data->availability = NULL;
+
     $data = create_module($data);
     if (!$data) {
-        return null;
+        return NULL;
     }
 
     return $data;
@@ -103,7 +106,7 @@ function toolbook_importepub_update_book_title($data, $title) {
     $data->name = substr($title, 0, 250);
     $data->intro = '<p>' . htmlentities($title, ENT_COMPAT, 'UTF-8') . '</p>';
     $data->introformat = 1;
-    book_update_instance($data, null);
+    book_update_instance($data, NULL);
 }
 
 /**
@@ -112,11 +115,11 @@ function toolbook_importepub_update_book_title($data, $title) {
  * @param stored_file $package EPUB file
  * @param object $course
  * @param int $section
- * @param bool $enablestyles
+ * @param object $settings
  * @param bool $verbose
  */
 function toolbook_importepub_add_epub($package, $course, $section,
-                                      $enablestyles, $verbose = false) {
+                                      $settings, $verbose = FALSE) {
     global $DB, $OUTPUT;
 
     $module = $DB->get_record('modules', array('name' => 'book'), '*',
@@ -124,15 +127,16 @@ function toolbook_importepub_add_epub($package, $course, $section,
 
     $data = toolbook_importepub_add_book($module, $course, $section);
     if (!$data) {
-        echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
+        echo $OUTPUT->notification(get_string('importing',
+                                              'booktool_importhtml'),
                                    'notifyproblem');
         return;
     }
 
     // $context = context_course::instance($course->id);
-
     $context = context_module::instance($data->coursemodule);
     toolbook_importepub_unzip_files($package, $context);
+
     $title = toolbook_importepub_get_title($context);
     if ($title) {
         toolbook_importepub_update_book_title($data, $title);
@@ -143,18 +147,18 @@ function toolbook_importepub_add_epub($package, $course, $section,
     $chapterfiles = toolbook_importepub_get_chapter_files($package, $context);
     $chapternames = toolbook_importepub_get_chapter_names($context);
     $chapternames[0] = $title;
-    toolbook_importepub_delete_files($context);
 
-    $cm = get_coursemodule_from_id('book', $data->coursemodule, 0, false,
+    $cm = get_coursemodule_from_id('book', $data->coursemodule, 0, FALSE,
                                    MUST_EXIST);
     $book = $DB->get_record('book', array('id' => $cm->instance), '*',
                             MUST_EXIST);
+
     echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
                                'notifysuccess');
 
-    return toolbook_importepub_import_chapters($package, 2, $chapterfiles,
-                                               $chapternames, $enablestyles,
-                                               $book, $context, $verbose);
+    toolbook_importepub_import_chapters($package, $chapterfiles, $chapternames,
+                                        $settings, $book, $context, $verbose);
+    toolbook_importepub_delete_files($context);
 }
 
 /**
@@ -163,11 +167,11 @@ function toolbook_importepub_add_epub($package, $course, $section,
  * @param stored_file $package EPUB file
  * @param object $course
  * @param int $section
+ * @param object $settings
  * @param bool $verbose
  */
 function toolbook_importepub_add_epub_chapters($package, $course, $section,
-                                               $enablestyles,
-                                               $verbose = false) {
+                                               $settings, $verbose = FALSE) {
     global $DB, $OUTPUT;
 
     $module = $DB->get_record('modules', array('name' => 'book'), '*',
@@ -175,18 +179,32 @@ function toolbook_importepub_add_epub_chapters($package, $course, $section,
 
     $data = toolbook_importepub_add_book($module, $course, $section);
     if (!$data) {
-        echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
+        echo $OUTPUT->notification(get_string('importing',
+                                              'booktool_importhtml'),
                                    'notifyproblem');
         return;
     }
 
     $context = context_module::instance($data->coursemodule);
     toolbook_importepub_unzip_files($package, $context);
+
+    $booktitle = toolbook_importepub_get_title($context);
+
     $chapterfiles = toolbook_importepub_get_chapter_files($package, $context);
     $chapternames = toolbook_importepub_get_chapter_names($context);
-    toolbook_importepub_delete_files($context);
 
+    $fs = get_file_storage();
     foreach ($chapterfiles as $chapterfile) {
+        if (!$data) {
+            $data = toolbook_importepub_add_book($module, $course, $section);
+            $context = context_module::instance($data->coursemodule);
+
+            $fs->move_area_files_to_new_context($oldcontext->id, $context->id,
+                                                'mod_book', 'importepubtemp',
+                                                0);
+            //toolbook_importepub_unzip_files($package, $context);
+        }
+
         $title = '';
         if (array_key_exists($chapterfile->pathname, $chapternames)) {
             $title = $chapternames[$chapterfile->pathname];
@@ -194,56 +212,62 @@ function toolbook_importepub_add_epub_chapters($package, $course, $section,
             // $title = toolbook_importhtml_parse_title($htmlcontent, $chapterfile->pathname);
             $title = $chapterfile->pathname;
         }
-        $title = trim($title);
+        if ($title == '') {
+            $title = $booktitle;
+        }
         if ($title == '') {
             $title = '*';
         }
+        $title = trim($title);
 
-        if ($data) {
-            toolbook_importepub_update_book_title($data, $title);
-            rebuild_course_cache($course->id);
-        } else {
-            $data = toolbook_importepub_add_book($module, $course, $section,
-                                                 $title);
-        }
+        toolbook_importepub_update_book_title($data, $title);
+        rebuild_course_cache($course->id);
 
-        $cm = get_coursemodule_from_id('book', $data->coursemodule, 0, false,
+        $cm = get_coursemodule_from_id('book', $data->coursemodule, 0, FALSE,
                                        MUST_EXIST);
         $book = $DB->get_record('book', array('id' => $cm->instance), '*',
                                 MUST_EXIST);
-        $context = context_module::instance($data->coursemodule);
+
         echo $OUTPUT->notification(get_string('importing',
                                               'booktool_importhtml'),
                                    'notifysuccess');
-        toolbook_importepub_import_chapters($package, 2, array($chapterfile),
-                                            $chapternames, $enablestyles,
+
+        toolbook_importepub_import_chapters($package, array($chapterfile),
+                                            $chapternames, $settings,
                                             $book, $context, $verbose);
-        $data = null;
+
+        //toolbook_importepub_delete_files($context);
+        $oldcontext = $context;
+        $data = NULL;
     }
+
+    toolbook_importepub_delete_files($context);
     rebuild_course_cache($course->id);
 }
 
 /**
- * Import HTML pages from an EPUB ebook
+ * Import chapters from an EPUB ebook into an existing book
  *
  * @param stored_file $package EPUB file
- * @param stdClass $book
+ * @param object $book
  * @param context_module $context
+ * @param object $settings
  * @param bool $verbose
  */
 function toolbook_importepub_import_epub($package, $book, $context,
-                                         $enablestyles, $verbose = false) {
+                                         $settings, $verbose = FALSE) {
     global $OUTPUT;
 
     toolbook_importepub_unzip_files($package, $context);
     $chapterfiles = toolbook_importepub_get_chapter_files($package, $context);
     $chapternames = toolbook_importepub_get_chapter_names($context);
-    toolbook_importepub_delete_files($context);
+
     echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'),
                                'notifysuccess');
-    return toolbook_importepub_import_chapters($package, 2, $chapterfiles,
-                                               $chapternames, $enablestyles,
-                                               $book, $context, $verbose);
+
+    toolbook_importepub_import_chapters($package, $chapterfiles, $chapternames,
+                                        $settings, $book, $context, $verbose);
+    toolbook_importepub_delete_files($context);
 }
 
 /**
@@ -254,24 +278,47 @@ function toolbook_importepub_import_epub($package, $book, $context,
  */
 function toolbook_importepub_unzip_files($package, $context) {
     $packer = get_file_packer('application/zip');
-    $files = $package->list_files($packer);
-    $found = false;
-    foreach ($files as $file) {
+    $found = FALSE;
+    $basepath = '';
+    foreach ($package->list_files($packer) as $file) {
         if (empty($file->pathname)) {
             continue;
         }
         if ($file->pathname == 'META-INF/container.xml') {
-            $found = true;
+            $found = TRUE;
             break;
+        } else if (preg_match("#^(.+/)?META-INF/container\\.xml$#",
+                              $file->pathname, $matches)) {
+            $found = TRUE;
+            $basepath = $matches[1];
         }
     }
     if (!$found) {
-        return false;
+        return FALSE;
     }
 
     toolbook_importepub_delete_files($context);
     $package->extract_to_storage($packer, $context->id, 'mod_book',
-                                 'importhtmltemp', 0, '/');
+                                 'importepubtemp', 0, '/');
+
+    if ($basepath) {
+        // Move files to root
+        $fs = get_file_storage();
+        $files = $fs->get_area_files($context->id, 'mod_book',
+                                     'importepubtemp', 0, 'id', FALSE);
+        foreach ($files as $file) {
+            if (preg_match("#" . $basepath . "(.+)$#",
+                           $file->get_filepath() . $file->get_filename(),
+                           $matches)) {
+                $name = $matches[1];
+                if ($name . "/" == $basepath) {
+                    toolbook_importepub_delete_files($context);
+                    return FALSE;
+                }
+                $file->rename('/' . dirname($name) . '/', basename($name));
+            }
+        }
+    }
 }
 
 /**
@@ -281,11 +328,11 @@ function toolbook_importepub_unzip_files($package, $context) {
  */
 function toolbook_importepub_delete_files($context) {
     $fs = get_file_storage();
-    $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
+    $fs->delete_area_files($context->id, 'mod_book', 'importepubtemp', 0);
 }
 
 /**
- * Get OPF DOM and OPF root path from previously unzipped EPUB ebook
+ * Get OPF DOM and OPF root path from unzipped EPUB ebook
  *
  * @param context_module $context
  *
@@ -309,47 +356,45 @@ function toolbook_importepub_get_opf($context) {
 
     // Container
     $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                       'importhtmltemp', 0, '/',
-                                       'META-INF/container.xml');
+                                       'importepubtemp', 0, '/META-INF/',
+                                       'container.xml');
     $file = $fs->get_file_by_hash($filehash);
     if (!$file) {
-        return false;
+        return FALSE;
     }
     $doc = new DOMDocument();
     if (!$doc->loadXML($file->get_content())) {
-        return false;
+        return FALSE;
     }
     $items = $doc->getElementsByTagNameNS(CNT_NS, 'rootfile');
     if (!$items) {
-        return false;
+        return FALSE;
     }
     $rootfile = $items->item(0)->getAttribute('full-path');
-    $opfroot = dirname($rootfile) . '/';
-    if ($opfroot == './') {
-        $opfroot = '';
-    }
+    list($opfroot, $opfname) = toolbook_importepub_get_path('', $rootfile, TRUE);
 
     // OPF file
     $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                       'importhtmltemp', 0, '/', $rootfile);
+                                       'importepubtemp', 0,
+                                       '/' . $opfroot, $opfname);
     $file = $fs->get_file_by_hash($filehash);
     if (!$file) {
-        return false;
+        return FALSE;
     }
     $doc = new DOMDocument();
     if (!$doc->loadXML($file->get_content())) {
-        return false;
+        return FALSE;
     }
 
     return array($doc, $opfroot);
 }
 
 /**
- * Get title from previously unzipped EPUB ebook
+ * Get title from unzipped EPUB ebook
  *
  * @param context_module $context
  *
- * @return string or null
+ * @return string or NULL
  */
 function toolbook_importepub_get_title($context) {
     list($opf, $opfroot) = toolbook_importepub_get_opf($context);
@@ -359,11 +404,11 @@ function toolbook_importepub_get_title($context) {
             return $items->item(0)->nodeValue;
         }
     }
-    return null;
+    return NULL;
 }
 
 /**
- * Get chapter names from previously unzipped EPUB ebook
+ * Get chapter names from unzipped EPUB ebook
  *
  * @param context_module $context
  *
@@ -378,20 +423,21 @@ function toolbook_importepub_get_chapter_names($context) {
     }
 
     // Find nav document (EPUB 3)
-    $nav = null;
+    $nav = NULL;
     $items = $opf->getElementsByTagNameNS(OPF_NS, 'item');
     foreach ($items as $item) {
-        if ($item->hasAttribute('properties') and $item->hasAttribute('href')
-            and ($item->getAttribute('properties') == 'nav')) {
+        if ($item->hasAttribute('properties') && $item->hasAttribute('href')
+            && ($item->getAttribute('properties') == 'nav')) {
             $nav = $item->getAttribute('href');
         }
     }
+
     if ($nav) {
         $fs = get_file_storage();
 
         // Container
         $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                           'importhtmltemp', 0, '/',
+                                           'importepubtemp', 0, '/',
                                            $opfroot . $nav);
         $file = $fs->get_file_by_hash($filehash);
         if ($file) {
@@ -422,12 +468,12 @@ function toolbook_importepub_get_chapter_names($context) {
     }
 
     // Find ncx document (EPUB 2)
-    $ncx = null;
+    $ncx = NULL;
     $el = $opf->getElementsByTagNameNS(OPF_NS, 'spine');
     if ($el and $el->item(0)->hasAttribute('toc')) {
         $ncxid = $el->item(0)->getAttribute('toc');
 
-        $el = null;
+        $el = NULL;
         $items = $opf->getElementsByTagNameNS(OPF_NS, 'item');
         foreach ($items as $item) {
             if ($item->hasAttribute('id') and
@@ -445,7 +491,7 @@ function toolbook_importepub_get_chapter_names($context) {
 
         // Container
         $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
-                                           'importhtmltemp', 0, '/',
+                                           'importepubtemp', 0, '/',
                                            $opfroot . $ncx);
         $file = $fs->get_file_by_hash($filehash);
         if ($file) {
@@ -507,8 +553,7 @@ function toolbook_importepub_get_chapter_files($package, $context) {
 
     // Manifest
     $manifest = array();
-    $items = $opf->getElementsByTagNameNS(OPF_NS, 'item');
-    foreach ($items as $item) {
+    foreach ($opf->getElementsByTagNameNS(OPF_NS, 'item') as $item) {
         if ($item->hasAttribute('id') and $item->hasAttribute('href') and
             $item->hasAttribute('media-type')) {
             $manifest[$item->getAttribute('id')] =
@@ -518,16 +563,17 @@ function toolbook_importepub_get_chapter_files($package, $context) {
     }
 
     // Spine
-    $items = $opf->getElementsByTagNameNS(OPF_NS, 'itemref');
-    foreach ($items as $item) {
+    foreach ($opf->getElementsByTagNameNS(OPF_NS, 'itemref') as $item) {
         if ($item->hasAttribute('idref')) {
             // Maybe exclude if $item->getAttribute('linear') == 'no'?
             $it = $manifest[$item->getAttribute('idref')];
             if ($it['mediatype'] == 'application/xhtml+xml' or
                 $it['mediatype'] == 'text/html') {
-                $filepath = $opfroot . $it['href'];
-                // FIXME $filepath should be normalized (i.e. '/..' removed)
-                $chapterfiles[] = (object) array('pathname' => $filepath);
+                //$filepath = $opfroot . $it['href'];
+                $filepath = toolbook_importepub_get_path($opfroot, $it['href']);
+                $chapterfile = new stdClass();
+                $chapterfile->pathname = $filepath;
+                $chapterfiles[] = $chapterfile;
             }
         }
     }
@@ -535,194 +581,489 @@ function toolbook_importepub_get_chapter_files($package, $context) {
     return $chapterfiles;
 }
 
+function toolbook_importepub_parse_styles($doc, $basepath, $chap_id, $context,
+                                          $settings) {
+    $head = $doc->getElementsByTagName('head');
+    if (!$head) {
+        return NULL;
+    }
+
+    $dom = new DOMDocument();
+    $body = $dom->createElement('body');
+    $dom->appendChild($body);
+    $modified = FALSE;
+
+    foreach ($head[0]->childNodes as $el) {
+        if ($el->localName == 'link' &&
+            $el->hasAttribute('href') &&
+            $el->hasAttribute('rel') &&
+            $el->getAttribute('rel') == 'stylesheet') {
+            $href = $el->getAttribute('href');
+            $url = toolbook_importepub_update_link($href, $basepath,
+                                                   $chap_id, $context,
+                                                   TRUE, $settings);
+            if (!$url) {
+                $url = $href;
+            }
+
+            $nel = $dom->importNode($el, TRUE);
+            $nel->setAttribute('href', $url);
+            $body->appendChild($nel);
+            $modified = TRUE;
+        } else if ($el->localName == 'style') {
+            $nel = $dom->importNode($el, TRUE);
+            $nel->nodeValue = toolbook_importepub_get_css($nel->nodeValue,
+                                                          $settings);
+            $body->appendChild($nel);
+            $modified = TRUE;
+        }
+    }
+
+    if (!$modified) {
+        return NULL;
+    }
+    return $body;
+}
+
 /**
- * Import HTML pages packaged into one zip archive
+ * Return normalized full path, or path and filename separated.
+ * Path is without leading '/', but with ending '/', unless it is empty.
+ */
+function toolbook_importepub_get_path($basepath, $filepath, $split = FALSE) {
+    $temp = rawurldecode($filepath);
+    $fpath = $basepath . '/' . $temp;
+    $fpath = str_replace('//', '/', $fpath);
+    $fpath = ltrim($fpath, './');
+    $fpath = ltrim($fpath, '/');
+
+    $cnt = substr_count($fpath, '..');
+    for ($i = 0; $i < $cnt; $i++) {
+        $fpath = preg_replace('#[^/]+/\.\./#', '', $fpath, 1);
+    }
+
+    $fpath = clean_param($fpath, PARAM_PATH);
+
+    if (!$split) {
+        return $fpath;
+    }
+
+    $path = dirname($fpath);
+    if ($path == '.' || $path == '/') {
+        $path = '';
+    } else if ($path != '' && substr($path, -1) != '/') {
+        $path .= '/';
+    }
+    $name = basename($fpath);
+    return array($path, $name);
+}
+
+/**
+ * Convert some HTML content to UTF-8, getting original encoding from HTML head
+ *
+ * @param string $html html content to convert
+ * @return string html content converted to utf8
+ */
+function toolbook_importepub_fix_encoding($html) {
+    if (preg_match('/<head[^>]*>(.+)<\/head>/is', $html, $matches)) {
+        $head = $matches[1];
+        if (preg_match('/charset=([^"]+)/is', $head, $matches)) {
+            $enc = $matches[1];
+            return core_text::convert($html, $enc, 'utf-8');
+        }
+    }
+    return iconv('UTF-8', 'UTF-8//IGNORE', $html);
+}
+
+/**
+ * Extract the contents of the body
+ *
+ * @param string $body the body element node
+ * @return string the contents of the body
+ */
+function toolbook_importepub_get_body($body) {
+    //$html = $root->ownerDocument->saveXML($body);
+    $html = $body->ownerDocument->saveHTML($body);
+    if (preg_match('/<body[^>]*>(.+)<\/body>/is', $html, $matches)) {
+        $html = $matches[1];
+    }
+    // If saveXML is used, CDATA tags must be removed
+    //$html = str_replace('<![CDATA[', '', $html);
+    //$html = str_replace(']]>', '', $html);
+    return $html;
+}
+
+/**
+ * Store linked files (images, audio, video etc)
+ * and return new URL.
+ */
+function toolbook_importepub_update_link($src, $basepath, $chap_id, $context,
+                                         $stylesheet = FALSE, $settings = NULL) {
+    $url = parse_url($src);
+    if (array_key_exists('scheme', $url)) {
+        // Not a relative link
+        return '';
+    }
+
+    list($path, $name) = toolbook_importepub_get_path($basepath, $src, TRUE);
+
+    $fs = get_file_storage();
+    $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
+                                       'importepubtemp', 0, '/' . $path, $name);
+    $file = $fs->get_file_by_hash($filehash);
+    if (!$file) {
+        // Cannot find the file
+        return '';
+    }
+
+    $filehash = $fs->get_pathname_hash($context->id, 'mod_book', 'chapter',
+                                       $chap_id, '/' . $path, $name);
+    $oldfile = $fs->get_file_by_hash($filehash);
+    if (!$oldfile) {
+        $filerecord = array('contextid' => $context->id,
+                            'component' => 'mod_book',
+                            'filearea' => 'chapter',
+                            'itemid' => $chap_id);
+
+        $text = '';
+        if ($stylesheet) {
+            try {
+                $text = toolbook_importepub_get_css($file->get_content(),
+                                                    $settings);
+            } catch (Exception $e) {
+                // FIXME Maybe ignore the CSS file if it cannot be read
+                //return '';
+            }
+        }
+
+        if ($text) {
+            $filerecord['filepath'] = '/' . $path;
+            $filerecord['filename'] = $name;
+            $fs->create_file_from_string($filerecord, $text);
+        } else {
+            $fs->create_file_from_storedfile($filerecord, $file);
+        }
+    }
+
+    return '@@PLUGINFILE@@/' . $path . $name;
+}
+
+/**
+ * Import chapters
  *
  * @param stored_file $package
- * @param string $type type of the package ('typezipdirs' or 'typezipfiles')
  * @param array $chapterfiles
  * @param array $chapternames
- * @param bool $enablestyles
+ * @param array $settings
  * @param stdClass $book
  * @param context_module $context
  * @param bool $verbose
  */
-function toolbook_importepub_import_chapters($package, $type, $chapterfiles,
-                                             $chapternames, $enablestyles,
-                                             $book, $context, $verbose = true) {
+function toolbook_importepub_import_chapters($package, $chapterfiles,
+                                             $chapternames, $settings,
+                                             $book, $context, $verbose = TRUE) {
     global $DB, $OUTPUT;
 
-    $fs = get_file_storage();
-    $packer = get_file_packer('application/zip');
-    $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
-    $package->extract_to_storage($packer, $context->id, 'mod_book', 'importhtmltemp', 0, '/');
-    // $datafiles = $fs->get_area_files($context->id, 'mod_book', 'importhtmltemp', 0, 'id', false);
-    // echo "<pre>";p(var_export($datafiles, true));
+    //toolbook_importepub_unzip_files($package, $context);
+
+    if ($verbose) {
+        echo $OUTPUT->notification(get_string('importing',
+                                              'booktool_importhtml'),
+                                   'notifysuccess');
+    }
 
     $chapters = array();
+    $chaprefs = array();
 
-    if ($verbose) {
-        echo $OUTPUT->notification(get_string('importing', 'booktool_importhtml'), 'notifysuccess');
-    }
-    if ($type == 0) {
-        $chapterfile = reset($chapterfiles);
-        if ($file = $fs->get_file_by_hash("$context->id/mod_book/importhtmltemp/0/$chapterfile->pathname")) {
-            $htmlcontent = toolbook_importhtml_fix_encoding($file->get_content());
-            $htmlchapters = toolbook_importhtml_parse_headings(toolbook_importhtml_parse_body($htmlcontent));
-            // TODO: process h1 as main chapter and h2 as subchapters
+    $fs = get_file_storage();
+    foreach ($chapterfiles as $chapterfile) {
+        $filehash = $fs->get_pathname_hash($context->id, 'mod_book',
+                                           'importepubtemp', 0, '/',
+                                           $chapterfile->pathname);
+        $file = $fs->get_file_by_hash($filehash);
+        if (!$file) {
+            continue;
         }
-    } else {
-        foreach ($chapterfiles as $chapterfile) {
-            if ($file = $fs->get_file_by_hash(sha1("/$context->id/mod_book/importhtmltemp/0/$chapterfile->pathname"))) {
-                $chapter = new stdClass();
-                $htmlcontent = toolbook_importhtml_fix_encoding($file->get_content());
 
-                $chapter->bookid        = $book->id;
-                $chapter->pagenum       = $DB->get_field_sql('SELECT MAX(pagenum) FROM {book_chapters} WHERE bookid = ?', array($book->id)) + 1;
-                $chapter->importsrc     = '/'.$chapterfile->pathname;
-                $chapter->content       = '';
-                if ($enablestyles) {
-                    $chapter->content   .= toolbook_importhtml_parse_styles($htmlcontent);
-                }
-                $chapter->content       .= '<div class="lucimoo">';
-                $chapter->content       .= toolbook_importhtml_parse_body($htmlcontent);
-                $chapter->content       .= '</div>';
-                if (array_key_exists($chapterfile->pathname, $chapternames)) {
-                    $chapter->title = $chapternames[$chapterfile->pathname];
-                } else {
-                    $chapter->title = toolbook_importhtml_parse_title($htmlcontent, $chapterfile->pathname);
-                }
-                $chapter->title = trim($chapter->title);
-                if ($chapter->title == '') {
-                    if (array_key_exists(0, $chapternames)) {
-                        $chapter->title = trim($chapternames[0]);
-                    }
-                }
-                if ($chapter->title == '') {
-                    $chapter->title = '*';
-                }
-                $chapter->title = substr($chapter->title, 0, 250);
-                $chapter->contentformat = FORMAT_HTML;
-                $chapter->hidden        = 0;
-                $chapter->timecreated   = time();
-                $chapter->timemodified  = $chapter->timecreated;
-                if (preg_match('/_sub(\/|\.htm)/i', $chapter->importsrc)) { // If filename or directory ends with *_sub treat as subchapters
-                    $chapter->subchapter = 1;
-                } else {
-                    $chapter->subchapter = 0;
-                }
+        $html = toolbook_importepub_fix_encoding($file->get_content());
 
-                $chapter->id = $DB->insert_record('book_chapters', $chapter);
-                $chapters[$chapter->id] = $chapter;
+        // Handle self closing a-tags
+        $html = preg_replace("/<a ([^>]+)\\/>/", "<a $1>&#8203;</a>", $html);
 
-                // add_to_log($book->course, 'book', 'add chapter', 'view.php?id='.$context->instanceid.'&chapterid='.$chapter->id, $chapter->id, $context->instanceid);
+        $doc = new DOMDocument();
+        @$doc->loadHTML($html);
+
+        $chapref = new stdClass();
+        $chapref->chaps = array();
+
+        $chaps = toolbook_importepub_split($doc, $settings->tag,
+                                           $settings->classes);
+
+        $ldoc = new DOMDocument();
+        $header = mb_convert_encoding($settings->header,
+                                      'HTML-ENTITIES', 'UTF-8');
+        @$ldoc->loadHTML('<body>' . $header . '</body>');
+        $header = toolbook_importepub_get_body($ldoc->documentElement);
+        $footer = mb_convert_encoding($settings->footer,
+                                      'HTML-ENTITIES', 'UTF-8');
+        @$ldoc->loadHTML('<body>' . $footer . '</body>');
+        $footer = toolbook_importepub_get_body($ldoc->documentElement);
+
+        foreach ($chaps as $chap) {
+            $chapter = new stdClass();
+            $chapter->bookid = $book->id;
+            $chapter->pagenum = $DB->get_field_sql('SELECT MAX(pagenum) FROM {book_chapters} WHERE bookid = ?', array($book->id)) + 1;
+            $chapter->importsrc = '/' . $chapterfile->pathname;
+
+            $chapter->content = '<div class="lucimoo">' . $header .
+                                toolbook_importepub_get_body($chap->body) .
+                                $footer . '</div>';
+
+            if ($chap->subchapter == 0 &&
+                array_key_exists($chapterfile->pathname, $chapternames)) {
+                $chapter->title = $chapternames[$chapterfile->pathname];
+            } else {
+                $chapter->title = $chap->title;
             }
-        }
-    }
-
-    if ($verbose) {
-        echo $OUTPUT->notification(get_string('relinking', 'booktool_importhtml'), 'notifysuccess');
-    }
-    $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
-    foreach ($chapters as $chapter) {
-        // find references to all files and copy them + relink them
-        $matches = null;
-        if (preg_match_all('/(src|codebase|name|href|data)\s*=\s*[\'"]([^\'"#]+)(#[^\'"]*)?[\'"]/i', $chapter->content, $matches)) {
-            $filerecord = array('contextid' => $context->id,
-                                'component' => 'mod_book',
-                                'filearea' => 'chapter',
-                                'itemid' => $chapter->id);
-            foreach ($matches[0] as $i => $match) {
-                $name = rawurldecode($matches[2][$i]);
-                $filepath = dirname($chapter->importsrc) . '/' . $name;
-                $filepath = toolbook_importhtml_fix_path($filepath);
-
-                if (strtolower($matches[1][$i]) === 'href') {
-                    // skip linked html files, we will try chapter relinking later
-                    foreach ($allchapters as $target) {
-                        if ($target->importsrc === $filepath) {
-                            continue 2;
-                        }
-                    }
-                }
-
-                if ($file = $fs->get_file_by_hash(sha1("/$context->id/mod_book/importhtmltemp/0$filepath"))) {
-                    if (!$oldfile = $fs->get_file_by_hash(sha1("/$context->id/mod_book/chapter/$chapter->id$filepath"))) {
-                        $text = '';
-                        if (strtolower(substr($filepath, -4)) == '.css') {
-                            try {
-                                $text = toolbook_importepub_get_css($file);
-                            } catch (Exception $e) {
-                                // Just ignore the CSS file if it cannot be read
-                            }
-                        }
-                        if ($text) {
-                            $filerecord['filepath'] = dirname($filepath);
-                            if (substr($filerecord['filepath'], -1) != '/') {
-                                $filerecord['filepath'] .= '/';
-                            }
-                            $filerecord['filename'] = basename($filepath);
-                            $fs->create_file_from_string($filerecord, $text);
-                            unset($filerecord['filepath']);
-                            unset($filerecord['filename']);
-                        } else {
-                            $fs->create_file_from_storedfile($filerecord,
-                                                             $file);
-                        }
-                    }
-                    $chapter->content = str_replace($match, $matches[1][$i].'="@@PLUGINFILE@@'.$filepath.'"', $chapter->content);
+            $chapter->title = trim($chapter->title);
+            if ($chapter->title == '') {
+                if (array_key_exists(0, $chapternames)) {
+                    $chapter->title = trim($chapternames[0]);
                 }
             }
-            $DB->set_field('book_chapters', 'content', $chapter->content, array('id' => $chapter->id));
-        }
-    }
-    unset($chapters);
+            if ($chapter->title == '') {
+                $chapter->title = '*';
+            }
+            $chapter->title = substr($chapter->title, 0, 250);
 
-    // Relink relative HTML links
-    $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
-    foreach ($allchapters as $chapter) {
-        $newcontent = $chapter->content;
-        $matches = null;
-        if (preg_match_all('/(href)\s*=\s*[\'"]([^\'"#]+)(#([^\'"]*))?[\'"]/i',
-                           $chapter->content, $matches)) {
-            foreach ($matches[0] as $i => $match) {
-                if (strpos($matches[2][$i], ':') !== false or strpos($matches[2][$i], '@') !== false) {
-                    // it is either absolute or pluginfile link
+            $chapter->contentformat = FORMAT_HTML;
+            $chapter->hidden = 0;
+            $chapter->timecreated = time();
+            $chapter->timemodified = $chapter->timecreated;
+            $chapter->subchapter = $chap->subchapter;
+            $chapter->id = $DB->insert_record('book_chapters', $chapter);
+            $chapters[$chapter->id] = $chapter;
+
+            $ch = new stdClass();
+            $ch->content = $chapter->content;
+            $ch->id = $chapter->id;
+            list($temp, $tempb) = toolbook_importepub_get_path('', $chapterfile->pathname, TRUE);
+            $ch->path = $temp;
+            $chapref->chaps[] = $ch;
+
+            // add_to_log($book->course, 'book', 'add chapter', 'view.php?id='.$context->instanceid.'&chapterid='.$chapter->id, $chapter->id, $context->instanceid);
+        }
+
+        if ($settings->enablestyles && count($chapref->chaps) > 0) {
+            //$chapref->stylebody = toolbook_importepub_parse_styles($doc, $chapref->chaps[0]->path, $chapref->chaps[0]->id, $context, $settings);
+
+            // Since the style URLs uses @@PLUGINFILE@@ every style file
+            // must be copied to every chapter, instead of just using one copy
+            foreach ($chapref->chaps as $chap) {
+                $chapref->stylebody = toolbook_importepub_parse_styles($doc, $chap->path, $chap->id, $context, $settings);
+            }
+        } else {
+            $chapref->stylebody = NULL;
+        }
+
+        $chaprefs[$chapterfile->pathname] = $chapref;
+    }
+
+    // Update links
+    foreach ($chaprefs as $chapref) {
+        foreach ($chapref->chaps as $chap) {
+            $modified = FALSE;
+            $doc = new DOMDocument();
+            //$doc->loadXML($chap->content);
+            //$body = $doc->documentElement;
+
+            @$doc->loadHTML('<?xml encoding="UTF-8"?>' . $chap->content);
+            $body = $doc->getElementsByTagName("body");
+            if (!$body) {
+                continue;
+            }
+            $body = $body[0];
+
+            if (!($body || $body->firstChild)) {
+                continue;
+            }
+
+            // Update anchor links
+            foreach ($doc->getElementsByTagName("a") as $anchor) {
+                if (!$anchor->hasAttribute("href")) {
                     continue;
                 }
-                $chapterpath = dirname($chapter->importsrc).'/'.$matches[2][$i];
-                $chapterpath = toolbook_importhtml_fix_path($chapterpath);
-                foreach ($allchapters as $target) {
-                    if ($target->importsrc === $chapterpath) {
-                        $anchor = null;
-                        if ($matches[4][$i]) {
-                            $anchor = $matches[4][$i];
+                $href = $anchor->getAttribute("href");
+                $url = parse_url($href);
+                if (array_key_exists('scheme', $url)) {
+                    // Not a relative link
+                    continue;
+                }
+                $targetpath = '';
+                if (array_key_exists('path', $url)) {
+                    $targetpath = $url['path'];
+                }
+                $targetid = '';
+                if (array_key_exists('fragment', $url)) {
+                    $targetid = $url['fragment'];
+                }
+                $target = NULL;
+                if (!$targetpath && $targetid) {
+                    $target = $chapref;
+                } else if (array_key_exists($chap->path . $targetpath,
+                                            $chaprefs)) {
+                    $target = $chaprefs[$chap->path . $targetpath];
+                }
+                if ($target) {
+                    // Find link target chapter
+                    foreach ($target->chaps as $targetchap) {
+                        if (preg_match("/ id=['\"]" . $targetid . "['\"]/",
+                                       $targetchap->content)) {
+                            if ($targetchap->id != $chap->id) {
+                                $nurl = new moodle_url('/mod/book/view.php', array('id' => $context->instanceid, 'chapterid' => $targetchap->id), $targetid);
+                                $anchor->setAttribute('href', $nurl->out(FALSE));
+                                $modified = TRUE;
+                            }
                         }
-                        $nurl = new moodle_url('/mod/book/view.php',
-                                               array('id' => $context->instanceid,
-                                                     'chapterid' => $target->id),
-                                               $anchor);
-                        $newcontent = str_replace($match, 'href="'. $nurl .'"',
-                                                  $newcontent);
                     }
                 }
             }
+
+            # Update link[@rel='stylesheet'] links
+            foreach ($doc->getElementsByTagName("link") as $obj) {
+                if (!($obj->hasAttribute("href") &&
+                      $obj->hasAttribute("rel") &&
+                      $obj->hasAttribute("rel") == "stylesheet")) {
+                    continue;
+                }
+                $href = $obj->getAttribute("href");
+                $url = toolbook_importepub_update_link($href, $chap->path,
+                                                       $chap->id, $context,
+                                                       TRUE, $settings);
+                if ($url) {
+                    $obj->setAttribute("href", $url);
+                    $modified = TRUE;
+                }
+            }
+
+            # Update object links
+            # FIXME Should maybe handle codebase attribute?
+            foreach ($doc->getElementsByTagName("object") as $obj) {
+                if (!$obj->hasAttribute("data")) {
+                    continue;
+                }
+                $data = $obj->getAttribute("data");
+                $url = toolbook_importepub_update_link($data, $chap->path,
+                                                       $chap->id, $context);
+                if ($url) {
+                    $obj->setAttribute("data", $url);
+                    $modified = TRUE;
+                }
+            }
+
+            # Update img links
+            foreach ($doc->getElementsByTagName("img") as $obj) {
+                if (!$obj->hasAttribute("src")) {
+                    continue;
+                }
+                $src = $obj->getAttribute("src");
+                $url = toolbook_importepub_update_link($src, $chap->path,
+                                                       $chap->id, $context);
+                if ($url) {
+                    $obj->setAttribute("src", $url);
+                    $modified = TRUE;
+                }
+            }
+
+            # Update video links
+            foreach ($doc->getElementsByTagName("video") as $obj) {
+                if (!$obj->hasAttribute("src")) {
+                    continue;
+                }
+                $src = $obj->getAttribute("src");
+                $url = toolbook_importepub_update_link($src, $chap->path,
+                                                       $chap->id, $context);
+                if ($url) {
+                    $obj->setAttribute("src", $url);
+                    $modified = TRUE;
+                }
+            }
+
+            # Update audio links
+            foreach ($doc->getElementsByTagName("audio") as $obj) {
+                if (!$obj->hasAttribute("src")) {
+                    continue;
+                }
+                $src = $obj->getAttribute("src");
+                $url = toolbook_importepub_update_link($src, $chap->path,
+                                                       $chap->id, $context);
+                if ($url) {
+                    $obj->setAttribute("src", $url);
+                    $modified = TRUE;
+                }
+            }
+
+            # Update source links
+            foreach ($doc->getElementsByTagName("source") as $obj) {
+                if (!$obj->hasAttribute("src")) {
+                    continue;
+                }
+                $src = $obj->getAttribute("src");
+                $url = toolbook_importepub_update_link($src, $chap->path,
+                                                       $chap->id, $context);
+                if ($url) {
+                    $obj->setAttribute("src", $url);
+                    $modified = TRUE;
+                }
+            }
+
+            # Update embed links
+            foreach ($doc->getElementsByTagName("embed") as $obj) {
+                if (!$obj->hasAttribute("src")) {
+                    continue;
+                }
+                $src = $obj->getAttribute("src");
+                $url = toolbook_importepub_update_link($src, $chap->path,
+                                                       $chap->id, $context);
+                if ($url) {
+                    $obj->setAttribute("src", $url);
+                    $modified = TRUE;
+                }
+            }
+
+            // Include stylesheets
+            if ($chapref->stylebody) {
+                foreach ($chapref->stylebody->childNodes as $el) {
+                    $nel = $doc->importNode($el, TRUE);
+                    $body->insertBefore($nel, $body->firstChild);
+                    //$doc->documentElement->insertBefore($nel, $doc->documentElement->firstChild);
+                }
+                $modified = TRUE;
+            }
+
+            if ($modified) {
+                // Store modified chapter content
+                $DB->set_field('book_chapters', 'content', toolbook_importepub_get_body($doc->documentElement), array('id' => $chap->id));
+            }
         }
-        if ($newcontent !== $chapter->content) {
-            $DB->set_field('book_chapters', 'content', $newcontent, array('id' => $chapter->id));
-        }
+    }
+
+    if ($verbose) {
+        echo $OUTPUT->notification(get_string('relinking',
+                                              'booktool_importhtml'),
+                                   'notifysuccess');
     }
 
     // add_to_log($book->course, 'course', 'update mod', '../mod/book/view.php?id='.$context->instanceid, 'book '.$book->id);
-    $fs->delete_area_files($context->id, 'mod_book', 'importhtmltemp', 0);
+
+    //toolbook_importepub_delete_files($context);
 
     // update the revision flag - this takes a long time, better to refetch the current value
     $book = $DB->get_record('book', array('id' => $book->id));
     $DB->set_field('book', 'revision', $book->revision + 1, array('id' => $book->id));
 }
 
-function toolbook_importepub_get_css($file) {
-    $cssparser = new Sabberworm\CSS\Parser($file->get_content());
+function toolbook_importepub_get_css($input, $settings) {
+    $cssparser = new Sabberworm\CSS\Parser($input);
     $css = $cssparser->parse();
     foreach ($css->getAllDeclarationBlocks() as $block) {
         foreach ($block->getSelectors() as $selector) {
@@ -736,5 +1077,178 @@ function toolbook_importepub_get_css($file) {
             }
         }
     }
+
+    if ($settings->preventsmallfonts) {
+        foreach ($css->getAllRuleSets() as $ruleset) {
+            foreach ($ruleset->getRules() as $rule) {
+                if ($rule->getRule() == 'font-size') {
+                    $value = $rule->getValue();
+                    if ($value instanceof Sabberworm\CSS\Value\Size) {
+                        if ($value->getUnit() == 'em' ||
+                            $value->getUnit() == 'rem') {
+                            if (floatval($value->getSize()) < 1) {
+                                $value->setSize(1);
+                            }
+                        } else if ($value->getUnit() == '%') {
+                            if (floatval($value->getSize()) < 100) {
+                                $value->setSize(100);
+                            }
+                        }
+                    }
+                //} else if ($rule->getRule() == 'font') {
+                /* } else if ($rule->getRule() == 'line-height') { */
+                /*     $value = $rule->getValue(); */
+                /*     if ($value instanceof Sabberworm\CSS\Value\Size) { */
+                /*         if ($value->getUnit() == '') { */
+                /*             if (floatval($value->getSize()) < 1.2) { */
+                /*                 $rule->setValue('normal'); */
+                /*             } */
+                /*         } */
+                /*     } */
+                }
+            }
+        }
+    }
+
+    if ($settings->ignorefontfamily) {
+        foreach ($css->getAllRuleSets() as $ruleset) {
+            if ($ruleset instanceof Sabberworm\CSS\RuleSet\AtRuleSet) {
+                continue;
+            }
+            foreach ($ruleset->getRules() as $rule) {
+                if ($rule->getRule() == 'font-family') {
+                    $rule->setValue('inherit');
+                }
+            }
+        }
+    }
+
     return $css->__toString();
+}
+
+/*
+ * Split $body in two parts before $element.
+ */
+function toolbook_importepub_split_body($body, $element) {
+    if ($element->isSameNode($body)) {
+        return $body;
+    }
+
+    $parent = $element->parentNode;
+
+    if ($parent->firstChild->isSameNode($element->previousSibling)) {
+        // Remove if only whitespace
+        if ($parent->firstChild->nodeType == XML_TEXT_NODE &&
+            preg_match("/^\\s$/", $parent->firstChild->textContent)) {
+            $parent->removeChild($parent->firstChild);
+        }
+    }
+
+    if (!$parent->firstChild->isSameNode($element)) {
+        // Split parent element
+        $parentCopy = $parent->cloneNode(FALSE);
+        $parent->parentNode->insertBefore($parentCopy, $parent);
+        while (!$parent->firstChild->isSameNode($element)) {
+            $parentCopy->appendChild($parent->firstChild);
+        }
+    }
+
+    return toolbook_importepub_split_body($body, $parent);
+}
+
+function toolbook_importepub_get_nodes($root) {
+    if ($root->hasChildNodes()) {
+        foreach ($root->childNodes as $node) {
+            yield $node;
+            toolbook_importepub_get_nodes($node);
+        }
+    }
+}
+
+function toolbook_importepub_body_is_empty($root) {
+    foreach (toolbook_importepub_get_nodes($root) as $node) {
+        if ($node->nodeType == XML_TEXT_NODE) {
+            if (!preg_match('/^\\s$/', $node)) {
+                return FALSE;
+            }
+        } elseif ($node->nodeType == XML_ELEMENT_NODE) {
+            if ($node->localName == 'img' ||
+                $node->localName == 'object') {
+                return FALSE;
+            }
+        }
+    }
+    return TRUE;
+}
+
+function toolbook_importepub_split($doc, $tag, $classes) {
+    $body = $doc->getElementsByTagName("body");
+    if (!$body) {
+        return array();
+    }
+    $body = $body->item(0);
+
+    // Find split points
+    $chapters = array();
+    foreach ($body->getElementsByTagName($tag) as $chapter) {
+        if (count($classes) > 0) {
+            if ($chapter->hasAttribute('class')) {
+                $names = preg_split('/\s+/', $chapter->getAttribute('class'),
+                                    -1, PREG_SPLIT_NO_EMPTY);
+                foreach ($names as $name) {
+                    if (in_array($name, $classes)) {
+                        $chapters[] = $chapter;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $chapters[] = $chapter;
+        }
+    }
+
+    // Get headings
+    $headings = array();
+    foreach ($chapters as $chapter) {
+        $headings[] = trim($chapter->textContent);
+    }
+
+    // Perform splits
+    foreach ($chapters as $chapter) {
+        toolbook_importepub_split_body($body, $chapter);
+    }
+
+    /*
+    $body = $doc->getElementsByTagName("body")->item(0);
+    if (toolbook_importepub_body_is_empty($body)) {
+        $body->parentNode->removeChild($body);
+    }
+    */
+
+    // Insert empty main chapter if the document only contains subchapters
+    $bodies = $doc->getElementsByTagName("body");
+    if ($bodies->length == count($headings)) {
+        $body = $bodies->item(0);
+        $body->parantNode->insertBefore($doc->createElement("body"), $body);
+    }
+
+    $result = array();
+    $bodies = $doc->getElementsByTagName("body");
+
+    $chap = new stdClass();
+    $chap->body = $bodies->item(0);
+    $chap->title = "";
+    $chap->subchapter = 0;
+    $result[] = $chap;
+
+    $i = 1;
+    foreach ($headings as $heading) {
+        $chap = new stdClass();
+        $chap->body = $bodies->item($i);
+        $chap->title = $heading;
+        $chap->subchapter = 1;
+        $result[] = $chap;
+        $i += 1;
+    }
+    return $result;
 }

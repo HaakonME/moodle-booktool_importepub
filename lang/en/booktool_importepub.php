@@ -19,7 +19,7 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2013-2018 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -33,4 +33,13 @@ $string['importchapters'] = 'Import chapters from ebook';
 $string['importurls'] = 'Import from URLs';
 $string['urllist'] = 'URL list';
 $string['chaptersasbooks'] = 'Create one book per chapter';
+$string['stylesheets'] = 'Stylesheets';
 $string['enablestylesheets'] = 'Enable stylesheets';
+$string['preventsmallfonts'] = 'Prevent small text';
+$string['ignorefontfamily'] = 'Ignore font family';
+$string['addheader'] = 'Add header';
+$string['addfooter'] = 'Add footer';
+$string['subchapters'] = 'Subchapters';
+$string['dividetag'] = 'Divide on tag';
+$string['divideclass'] = 'Divide on class';
+$string['none'] = 'None';

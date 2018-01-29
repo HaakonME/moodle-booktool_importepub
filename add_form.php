@@ -19,7 +19,7 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2013-2018 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -46,13 +46,6 @@ class booktool_importepub_add_form extends moodleform {
                            array('subdirs' => 0,
                                  'accepted_types' => array('.epub')));
 
-        $buttonarray = array();
-        $buttonarray[] = &$mform->createElement('submit', 'submitfilebutton',
-                                                get_string('import'));
-        $buttonarray[] = &$mform->createElement('cancel');
-        $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
-        $mform->closeHeaderBefore('buttonar');
-
         $mform->addElement('header', 'general',
                            get_string('importurls', 'booktool_importepub'));
         if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
@@ -61,27 +54,85 @@ class booktool_importepub_add_form extends moodleform {
 
         $mform->addElement('textarea', 'urllist',
                            get_string('urllist', 'booktool_importepub'),
-                           'wrap="virtual" rows="10" cols="50"');
+                           'wrap="virtual" rows="2" cols="50"');
+        $mform->setType('urllist', PARAM_RAW);
 
-        $buttonarray = array();
-        $buttonarray[] = &$mform->createElement('submit', 'submitbutton',
-                                                get_string('importurls', 'booktool_importepub'));
-        $buttonarray[] = &$mform->createElement('cancel');
-        $mform->addGroup($buttonarray, 'buttonar2', '', array(' '), false);
-        $mform->closeHeaderBefore('buttonar2');
-
-        $mform->addElement('header', 'options', get_string('optionsheader',
-                                                           'resource'));
+        $mform->addElement('header', 'options',
+                           get_string('optionsheader', 'resource'));
         if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
             $mform->setExpanded('options');
         }
 
         $mform->addElement('checkbox', 'chaptersasbooks', '',
-                           get_string('chaptersasbooks', 'booktool_importepub'));
+                           get_string('chaptersasbooks',
+                                      'booktool_importepub'));
+
+        $mform->addElement('textarea', 'header',
+                           get_string('addheader', 'booktool_importepub'),
+                           'wrap="virtual" rows="2" cols="50"');
+        $mform->setType('header', PARAM_RAW);
+
+        $mform->addElement('textarea', 'footer',
+                           get_string('addfooter', 'booktool_importepub'),
+                           'wrap="virtual" rows="2" cols="50"');
+        $mform->setType('footer', PARAM_RAW);
+
+        $mform->addElement('header', 'stylesheets',
+                           get_string('stylesheets', 'booktool_importepub'));
+        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
+            $mform->setExpanded('stylesheets');
+        }
 
         $mform->addElement('checkbox', 'enablestylesheets', '',
-                           get_string('enablestylesheets', 'booktool_importepub'));
+                           get_string('enablestylesheets',
+                                      'booktool_importepub'));
         $mform->setDefault('enablestylesheets', 1);
+
+        $mform->addElement('checkbox', 'preventsmallfonts', '',
+                           get_string('preventsmallfonts',
+                                      'booktool_importepub'));
+
+        $mform->addElement('checkbox', 'ignorefontfamily', '',
+                           get_string('ignorefontfamily',
+                                      'booktool_importepub'));
+
+        $mform->addElement('header', 'divide_options',
+                           get_string('subchapters', 'booktool_importepub'));
+        if (method_exists($mform, 'setExpanded')) {     // Moodle 2.5
+            $mform->setExpanded('divide_options');
+        }
+
+        $radioarray = array();
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              get_string('none',
+                                                         'booktool_importepub'),
+                                              '', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;h1&gt;', 'h1', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;h2&gt;', 'h2', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;h3&gt;', 'h3', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;h4&gt;', 'h4', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;h5&gt;', 'h5', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;h6&gt;', 'h6', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;section&gt;', 'section', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;div&gt;', 'div', '');
+        $radioarray[] = $mform->createElement('radio', 'tag', '',
+                                              '&lt;p&gt;', 'p', '');
+        $mform->addGroup($radioarray, 'radioar',
+                         get_string('dividetag', 'booktool_importepub'),
+                         array(' '), false);
+
+        $mform->addElement('text', 'classes',
+                           get_string('divideclass', 'booktool_importepub'),
+                           '');
+        $mform->setType('classes', PARAM_NOTAGS);
 
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
@@ -89,10 +140,7 @@ class booktool_importepub_add_form extends moodleform {
         $mform->addElement('hidden', 'chapterid');
         $mform->setType('chapterid', PARAM_INT);
 
-        /*
-        $this->add_action_buttons(true, get_string('importurls',
-                                                   'booktool_importepub'));
-        */
+        $this->add_action_buttons(true, get_string('import'));
 
         $this->set_data($data);
     }
@@ -104,35 +152,28 @@ class booktool_importepub_add_form extends moodleform {
             return $errors;
         }
 
-        if (isset($data['submitfilebutton'])) {
-            $usercontext = context_user::instance($USER->id);
-            $fs = get_file_storage();
-
-            if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft',
-                                              $data['importfile'], 'id', false)) {
-                $errors['importfile'] = get_string('required');
-                return $errors;
-            } else {
-                $file = reset($files);
-                $mimetype = $file->get_mimetype();
-                if ($mimetype != 'application/epub+zip' and
-                    $mimetype != 'application/zip' and
-                    $mimetype != 'document/unknown' and
-                    $mimetype != null) {
-                    $errors['importfile'] = get_string('invalidfiletype',
-                                                       'error',
-                                                       $file->get_filename());
-                    $fs->delete_area_files($usercontext->id, 'user', 'draft',
-                                           $data['importfile']);
-                } /* else {
-                    if (!$chapterfiles = toolbook_importepub_get_chapter_files($file, $usercontext)) {
-                        $errors['importfile'] = get_string('errornochapters',
-                                                           'booktool_importhtml');
-                    }
-                } */
+        $usercontext = context_user::instance($USER->id);
+        $fs = get_file_storage();
+        $files = $fs->get_area_files($usercontext->id, 'user', 'draft',
+                                     $data['importfile'], 'id', false);
+        if (count($files) > 0) {
+            $file = reset($files);
+            $mimetype = $file->get_mimetype();
+            if ($mimetype != 'application/epub+zip' and
+                $mimetype != 'application/zip' and
+                $mimetype != 'document/unknown' and
+                $mimetype != null) {
+                $errors['importfile'] = get_string('invalidfiletype',
+                                                   'error',
+                                                   $file->get_filename());
+                $fs->delete_area_files($usercontext->id, 'user', 'draft',
+                                       $data['importfile']);
             }
+        } else if (strlen($data['urllist']) > 0) {
+            ;
+        } else {
+            $errors['importfile'] = get_string('required');
         }
-
         return $errors;
     }
 }

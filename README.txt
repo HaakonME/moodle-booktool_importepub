@@ -170,6 +170,42 @@ This functionality is only available with Moodle 2.5 and later.
     but it can be any book. Unfortunately Moodle does
     not provide any better place to put such a link.)
 
+### Import options
+
+- Create one book per chapter:
+  This will create one book for every chapter, instead of only
+  one book with many chapters.
+
+- Add header:
+  This allows you to type in a string of HTML code that is added
+  at the start of every chapter.
+
+- Add footer:
+  This allows you to type in a string of HTML code that is added
+  at the end of every chapter.
+
+- Subchapters:
+  This allows you to divide chapters into subchapters.
+  You can specify which HTML tag to start a new subchapter at,
+  and optionally one or more class names that must match.
+
+- Enable stylesheets:
+  This enables stylesheets.
+
+- Prevent small text:
+  This will try to prevent the text size from being smaller
+  than the default text size.
+
+- Ignore font family:
+  This will try to make all text appear in the default font instead
+  of any font specified in the EPUB file.
+
+
+## Thanks
+
+Some features of the plugin were developed with support from
+the Ministry Division of the Archbishops’ Council of the Church of England.
+
 
 ## Credits
 

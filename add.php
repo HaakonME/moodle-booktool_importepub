@@ -19,7 +19,7 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013-2014 Mikael Ylikoski
+ * @copyright  2013-2018 Mikael Ylikoski
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -68,27 +68,42 @@ if ($mform->is_cancelled()) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('importepub', 'booktool_importepub'));
 
-    $fs = get_file_storage();
-    $usercontext = context_user::instance($USER->id);
+    $settings = new stdClass();
+    $settings->enablestyles = property_exists($data, 'enablestylesheets');
+    $settings->preventsmallfonts = property_exists($data, 'preventsmallfonts');
+    $settings->ignorefontfamily = property_exists($data, 'ignorefontfamily');
+    $settings->tag = $data->tag;
+    if (strlen($data->classes) > 0) {
+        $settings->classes = preg_split('/\s+/', $data->classes,
+                                        -1, PREG_SPLIT_NO_EMPTY);
+    } else {
+        $settings->classes = array();
+    }
+    $settings->header = $data->header;
+    $settings->footer = $data->footer;
+
     $section = $DB->get_field('course_sections', 'section',
                               array('id' => $cm->section));
-    if (property_exists($data, 'submitfilebutton')) {
-        $draftid = file_get_submitted_draft_itemid('importfile');
-        if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft',
-                                          $draftid, 'id DESC', false)) {
-            redirect($PAGE->url);
-        }
-        $enablestylesheets = property_exists($data, 'enablestylesheets');
+
+    $fs = get_file_storage();
+    $usercontext = context_user::instance($USER->id);
+    $draftid = file_get_submitted_draft_itemid('importfile');
+    $files = $fs->get_area_files($usercontext->id, 'user', 'draft',
+                                 $draftid, 'id DESC', false);
+
+    if (count($files) > 0) {
         foreach ($files as $file) {
             if (property_exists($data, 'chaptersasbooks')) {
                 toolbook_importepub_add_epub_chapters($file, $course, $section,
-                                                      $enablestylesheets);
+                                                      $settings);
             } else {
                 toolbook_importepub_add_epub($file, $course, $section,
-                                             $enablestylesheets);
+                                             $settings);
             }
         }
-    } else {
+    }
+
+    if (property_exists($data, 'urllist') && strlen($data->urllist) > 0) {
         require_once($CFG->libdir . '/filelib.php');
 
         foreach (preg_split("/\s+/", $data->urllist) as $line) {
@@ -109,20 +124,21 @@ if ($mform->is_cancelled()) {
                               'filename' => 'luci.epub');
             $file = $fs->get_file($fileinfo['contextid'],
                                   $fileinfo['component'],
-                                  $fileinfo['filearea'], $fileinfo['itemid'],
-                                  $fileinfo['filepath'], $fileinfo['filename']);
+                                  $fileinfo['filearea'],
+                                  $fileinfo['itemid'],
+                                  $fileinfo['filepath'],
+                                  $fileinfo['filename']);
             if ($file) {
                 $file->delete();
             }
             $file = $fs->create_file_from_string($fileinfo, $fdata);
             unset($fdata);
-            $enablestylesheets = property_exists($data, 'enablestylesheets');
             if (property_exists($data, 'chaptersasbooks')) {
                 toolbook_importepub_add_epub_chapters($file, $course, $section,
-                                                      $enablestylesheets);
+                                                      $settings);
             } else {
                 toolbook_importepub_add_epub($file, $course, $section,
-                                             $enablestylesheets);
+                                             $settings);
             }
             if ($file) {
                 $file->delete();
