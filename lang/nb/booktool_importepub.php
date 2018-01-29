@@ -19,7 +19,7 @@
  *
  * @package    booktool
  * @subpackage importepub
- * @copyright  2013 Haakon Meland Eriksen
+ * @copyright  2013-2018 Haakon Meland Eriksen
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -33,4 +33,13 @@ $string['importchapters'] = 'Importer kapittel fra ebok';
 $string['importurls'] = 'Importer fra URL-er';
 $string['urllist'] = 'URL-liste';
 $string['chaptersasbooks'] = 'Lag en bok per kapittel';
-$string['enablestylesheets'] = 'Enable stylesheets'; /* TRANSLATE-ME */
+$string['stylesheets'] = 'Stilark';
+$string['enablestylesheets'] = 'Skru på stilark';
+$string['preventsmallfonts'] = 'Forhindre liten tekst';
+$string['ignorefontfamily'] = 'Ignorer skrifttype';
+$string['addheader'] = 'Legg til topptekst';
+$string['addfooter'] = 'Legg til bunntekst';
+$string['subchapters'] = 'Underkapitler';
+$string['dividetag'] = 'Del på element';
+$string['divideclass'] = 'Del på klasse';
+$string['none'] = 'Ingen';
