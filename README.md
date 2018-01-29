@@ -1,20 +1,20 @@
-# Lucimoo EPUB import/export add-ons for the Moodle book module
+# Lucimoo EPUB import/export plugins for the Moodle book module
 
-Lucimoo consists of two add-ons for the Moodle book module:
+Lucimoo consists of two plugins for the Moodle book module:
 
-*   The "importepub" add-on provides functionality to import
+*   The "importepub" plugin provides functionality to import
     content from EPUB ebooks into book module books.
 
-*   The "exportepub" add-on provides functionality to export
+*   The "exportepub" plugin provides functionality to export
     book module books as EPUB ebooks.
 
 
 ## Requirements
 
 The book module is included in Moodle 2.3 and later, and by
-default these add-ons can only be installed in these versions
+default these plugins can only be installed in these versions
 of Moodle. If you use Moodle 2.0-2.2 and have manually installed
-the book module and want to use these add-ons, you must remove
+the book module and want to use these plugins, you must remove
 the line "$plugin->requires = 2012062500;" from the files
 "importepub/version.php" and "exportepub/version.php" before
 they can be installed.
@@ -22,24 +22,41 @@ they can be installed.
 
 ## Installation
 
-The import and export add-ons can be installed independently
+The import and export plugins can be installed independently
 of each other, so if you only want one of them you do not
 need to install the other.
 
-In Moodle 2.5 and later you can install add-ons from the
+In Moodle 2.5 and later you can install plugins from the
 "Site administration" view. In older versions of Moodle
 you need to install them manually.
 
 Note that the "Administration" block (or "Settings" block
 in some versions of Moodle) must be visible in the
-user interface for the add-ons to work properly. It is
+user interface for the plugins to work properly. It is
 visible in default configurations, but can be configured
 to not be displayed, in which case users will not see the
-user interface controls for the add-ons.
+user interface controls for the plugins.
 
-### Installation from the "Site administration" view
+General plugin installation instructions are available at
+http://docs.moodle.org/31/en/Installing_plugins
 
-This is only possible with Moodle 2.5 and later.
+### Installation from the "Site administration" view in Moodle 3.0 and later
+
+1.  Login as admin and visit the Moodle
+    "Site administration" view, and click on
+    "Site administration" > "Plugins" > "Install plugins"
+    on the left.
+
+2.  Select the Lucimoo ZIP package you want to install.
+
+3.  Click on the "Install plugin from the ZIP file" button.
+
+4.  Click on the "Continue" button.
+
+5.  Repeat 1-4 with the other Lucimoo ZIP package if you
+    want to install both the import and the export plugins.
+
+### Installation from the "Site administration" view in Moodle 2.5-2.8
 
 1.  Login as admin and visit the Moodle
     "Site administration" view, and click on
@@ -75,21 +92,17 @@ This is possible with Moodle 2.0 and later.
     "Site administration" > "Notifications" on the left
     and follow the instructions to finish the installation.
 
-General add-on installation instructions are available at
-http://docs.moodle.org/27/en/Installing_add-ons
-
 ### Upgrading from an older version of Lucimoo to a newer version
 
-The Lucimoo add-ons do not store any add-on specific data in the
-Moodle database. This means that you do not lose any data if you
+The Lucimoo plugins do not store any plugin specific data in the
+Moodle database. This means that you do not loose any data if you
 uninstall them, and you can upgrade to another version of the
-Lucimoo add-ons simply by uninstalling the old version and then
-install the new version.
+Lucimoo plugins simply by installing the new version.
 
 
 ## Configuration
 
-The export add-on has a few settings that can be changed by
+The export plugin has a few settings that can be changed by
 editing the file "config.php".
 
 
@@ -157,21 +170,59 @@ This functionality is only available with Moodle 2.5 and later.
     but it can be any book. Unfortunately Moodle does
     not provide any better place to put such a link.)
 
+### Import options
+
+- Create one book per chapter:
+  This will create one book for every chapter, instead of only
+  one book with many chapters.
+
+- Add header:
+  This allows you to type in a string of HTML code that is added
+  at the start of every chapter.
+
+- Add footer:
+  This allows you to type in a string of HTML code that is added
+  at the end of every chapter.
+
+- Subchapters:
+  This allows you to divide chapters into subchapters.
+  You can specify which HTML tag to start a new subchapter at,
+  and optionally one or more class names that must match.
+
+- Enable stylesheets:
+  This enables stylesheets.
+
+- Prevent small text:
+  This will try to prevent the text size from being smaller
+  than the default text size.
+
+- Ignore font family:
+  This will try to make all text appear in the default font instead
+  of any font specified in the EPUB file.
+
+
+## Thanks
+
+Some features of the plugin were developed with support from
+the Ministry Division of the Archbishops’ Council of the Church of England.
+
 
 ## Credits
+
+French translation by Sophie Canal.
 
 Norwegian translation by Haakon Meland Eriksen.
 
 Spanish translation by Lupa.
 
-The Lucimoo EPUB import add-on includes code from the
+The Lucimoo EPUB import plugin includes code from the
 following external project:
 
 PHP-CSS-Parser
 Copyright (c) 2011 Raphael Schweikert, http://sabberworm.com/
 https://github.com/sabberworm/PHP-CSS-Parser
 
-The Lucimoo EPUB export add-on includes code from the
+The Lucimoo EPUB export plugin includes code from the
 following external project:
 
 PHPZip
