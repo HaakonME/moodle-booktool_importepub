@@ -34,6 +34,9 @@ require_once($CFG->dirroot . '/course/lib.php');
 require_once($CFG->dirroot . '/mod/book/lib.php');
 require_once($CFG->dirroot . '/mod/book/locallib.php');
 
+ini_set('max_execution_time', 600);
+set_time_limit(600);
+
 if (!function_exists('create_module')) {        // Moodle <= 2.4
     function create_module($data) {
         return NULL;
@@ -1136,7 +1139,8 @@ function toolbook_importepub_split_body($body, $element) {
 
     $parent = $element->parentNode;
 
-    if ($parent->firstChild->isSameNode($element->previousSibling)) {
+    if ((!$parent->firstChild->isSameNode($element)) &&
+        $parent->firstChild->isSameNode($element->previousSibling)) {
         // Remove if only whitespace
         if ($parent->firstChild->nodeType == XML_TEXT_NODE &&
             preg_match("/^\\s$/", $parent->firstChild->textContent)) {
