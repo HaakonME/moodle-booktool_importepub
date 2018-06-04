@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2018/06/04    1.2.6     Support Privacy API for GDPR compliance
 2017/11/12    1.2.5     Handle headings with formatting properly, clean line-height property
 2017/10/23    1.2.4     Handle temporary Zip file folder correctly on import, fixed by Leon Stringer
 2017/09/05    1.2.3     Don't raise the memory limit for XSLT any more, fix coding standards errors

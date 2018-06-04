@@ -45,6 +45,7 @@ $string['transformationfailed'] = 'XSLT transformation failed (<b>{$a}</b>)';
 $string['xsltunavailable'] = 'You need the XSLT library installed in PHP to save this Word file';
 $string['stylesheetunavailable'] = 'XSLT Stylesheet <b>{$a}</b> is not available';
 $string['cannotopentempfile'] = 'Cannot open temporary file <b>{$a}</b>';
+$string['privacy:metadata']      = 'The Microsoft Word file import/export tool for books does not store personal data.';
 
 // Strings used in settings.
 $string['settings'] = 'Word file import settings';
