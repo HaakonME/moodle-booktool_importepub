@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2018/08/25    1.2.8     Fix erroneous behaviour during Behat testing.
 2018/08/06    1.2.7     Fix get_reason declaration in Privacy API code to make it more compatible with PHP 5/7.
 2018/06/04    1.2.6     Support Privacy API for GDPR compliance.
 2017/11/12    1.2.5     Handle headings with formatting properly, clean line-height property.
