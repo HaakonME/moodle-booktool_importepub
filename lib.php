@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
 function booktool_wordimport_extend_settings_navigation(settings_navigation $settings, navigation_node $node) {
     global $PAGE;
 
-    if (empty($PAGE->cm) or $PAGE->cm->modname !== 'book') {
+    if (empty($PAGE->cm) && $PAGE->cm->modname !== 'book') {
         return;
     }
 
