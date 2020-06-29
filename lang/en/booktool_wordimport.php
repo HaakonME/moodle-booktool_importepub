@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Microsoft Word file Import/Export';
+$string['pluginname'] = 'Microsoft Word file Import/Export (Book)';
 $string['wordimport:export'] = 'Export Microsoft Word file';
 $string['wordimport:import'] = 'Import Microsoft Word file';
 $string['wordfile'] = 'Microsoft Word file';
