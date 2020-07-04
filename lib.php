@@ -38,15 +38,17 @@ function booktool_wordimport_extend_settings_navigation(settings_navigation $set
     }
 
     $params = $PAGE->url->params();
-    if (empty($params['id']) and empty($params['cmid'])) {
+    if (empty($params['id']) && empty($params['cmid'])) {
         return;
     }
-
+    if (empty($params['chapterid'])) {
+        $params['chapterid'] = 0;
+    }
     if (empty($PAGE->cm->context)) {
         $PAGE->cm->context = get_context_module::instance($PAGE->cm->instance);
     }
 
-    if (!(has_capability('booktool/wordimport:import', $PAGE->cm->context) and
+    if (!(has_capability('booktool/wordimport:import', $PAGE->cm->context) &&
         has_capability('mod/book:edit', $PAGE->cm->context))) {
         return;
     }

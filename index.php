@@ -26,6 +26,8 @@ require(dirname(__FILE__).'/../../../../config.php');
 require_once(dirname(__FILE__).'/locallib.php');
 require_once(dirname(__FILE__).'/import_form.php');
 
+use \booktool_wordimport\wordconverter;
+
 $id        = required_param('id', PARAM_INT);           // Course Module ID.
 $chapterid = optional_param('chapterid', 0, PARAM_INT); // Chapter ID.
 $action = optional_param('action', 'import', PARAM_TEXT);
@@ -78,10 +80,11 @@ if ($mform->is_cancelled()) {
     }
     $chaptertext .= $chapter->content;
     // Preprocess the chapter HTML to embed images.
-    $chaptertext .= booktool_wordimport_base64_images($context->id, 'chapter', $chapter->id);
+    $word2xml = new wordconverter();
+    $chaptertext .= $word2xml->base64_images($context->id, 'chapter', $chapter->id);
     $chaptertext .= '</div>';
     // Postprocess the HTML to add a wrapper template and convert embedded images to a table.
-    $chaptertext = booktool_wordimport_export($chaptertext);
+    $chaptertext = $word2xml->export($chaptertext);
     $filename = clean_filename($book->name . '_chap' . sprintf("%02d", $chapter->pagenum)).'.doc';
     send_file($chaptertext, $filename, 10, 0, true, array('filename' => $filename));
     die;
@@ -93,7 +96,8 @@ if ($mform->is_cancelled()) {
     // Read the title and introduction into a string, embedding images.
     $booktext = '<p class="MsoTitle">' . $book->name . "</p>\n";
     $booktext .= '<div class="chapter" id="intro">' . $book->intro;
-    $booktext .= booktool_wordimport_base64_images($context->id, 'intro');
+    $word2xml = new wordconverter();
+    $booktext .= $word2xml->base64_images($context->id, 'intro');
     $booktext .= "</div>\n";
 
     // Append all the chapters to the end of the string, again embedding images.
@@ -106,10 +110,10 @@ if ($mform->is_cancelled()) {
             $booktext .= "<h2>" . $chapter->title . "</h2>\n";
         }
         $booktext .= $chapter->content;
-        $booktext .= booktool_wordimport_base64_images($context->id, 'chapter', $chapter->id);
+        $booktext .= $word2xml->base64_images($context->id, 'chapter', $chapter->id);
         $booktext .= "</div>\n";
     }
-    $booktext = booktool_wordimport_export($booktext);
+    $booktext = $word2xml->export($booktext);
     $filename = clean_filename($book->name) . '.doc';
     send_file($booktext, $filename, 10, 0, true, array('filename' => $filename));
     die;

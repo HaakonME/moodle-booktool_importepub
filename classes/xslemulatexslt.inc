@@ -24,7 +24,7 @@
  */
 
 
-// This file is copied from moodle/backup/bb/xsl_emulate_xslt.inc.
+// This file is copied from @link https://github.com/moodle/moodle/tree/MOODLE_19_STABLE/backup/bbxsl_emulate_xslt.inc.
 
 // This file adds xslt_xxx emulation functions.
 // It is intended for systems, e.g. those running PHP 5, where:
@@ -36,7 +36,7 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-// This silliness is required to prevent PHP from evaluating the function() blocks before processing the return;s.
+// This silliness is required to prevent PHP from evaluating the function() blocks before processing the return's.
 if (true) {
 
     if (function_exists('xslt_create')) {
