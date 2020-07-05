@@ -24,11 +24,9 @@
 
 namespace booktool_wordimport;
 
-require_once($CFG->libdir.'/xmlize.php');
-require_once(dirname(__FILE__).'/xslemulatexslt.inc');
-
-
 defined('MOODLE_INTERNAL') || die;
+
+require_once(__DIR__.'/xslemulatexslt.inc');
 
 /**
  * Import HTML pages from a Word file
@@ -58,6 +56,50 @@ class wordconverter {
     */
     private $exportstylesheet = __DIR__ . "/xhtml2wordpass2.xsl";
 
+    /**
+     * Process XML using XSLT script
+     *
+     * @param string $xmldata XML-formatted content
+     * @param string $xslfile Full path to XSLT script file
+     * @param array $parameters array of parameters to pass into script
+     * @return string Processed XML content
+     */
+    public function convert(string $xmldata, string $xslfile, array $parameters) {
+        global $CFG;
+
+        // Check that XSLT is installed.
+        if (!class_exists('XSLTProcessor') || !function_exists('xslt_create')) {
+            // PHP 'xsl' extension library is required for this action.
+            throw new \moodle_exception(get_string('extensionrequired', 'tool_xmldb', 'xsl'));
+        }
+
+        // Check that the XSLT stylesheet exists.
+        if (!file_exists($xslfile)) {
+            throw new \moodle_exception(get_string('stylesheetunavailable', 'booktool_wordimport', $xslfile));
+        }
+
+        // Get a temporary file name for storing the XML content to transform.
+        if (!($tempxmlfilename = tempnam($CFG->tempdir, "b2x-"))) {
+            throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
+        }
+
+        // Create the temporary file based on the temporary name, but add a suitable suffix for easier debugging.
+        $tempxmlfilename = dirname($tempxmlfilename) . DIRECTORY_SEPARATOR . basename($tempxmlfilename, ".tmp") . ".xml";
+        if ((file_put_contents($tempxmlfilename, $xmldata)) == 0) {
+            throw new \moodle_exception('cannotsavefile', 'error', $tempwordmlfilename);
+        }
+
+        // Run the XSLT script using the PHP xsl library.
+        $xsltproc = xslt_create();
+        if (!($xsltoutput = xslt_process($xsltproc, $tempxmlfilename, $xslfile, null, null, $parameters))) {
+            // Transformation failed.
+            $this->debug_unlink($tempxmlfilename);
+            throw new \moodle_exception('transformationfailed', 'booktool_wordimport', $tempxmlfilename);
+        }
+        $this->debug_unlink($tempxmlfilename);
+
+        return $xsltoutput;
+    }
 
     /**
      * Extract the WordProcessingML XML files from the .docx file, and use a sequence of XSLT
@@ -76,12 +118,6 @@ class wordconverter {
             // Cannot unzip file.
             $this->debug_unlink($filename);
             throw new \moodle_exception('cannotunzipfile', 'error');
-        }
-
-        // Check that XSLT is installed.
-        if (!class_exists('XSLTProcessor') || !function_exists('xslt_create')) {
-            // PHP extension 'xsl' is required for this action.
-            throw new \moodle_exception(get_string('extensionrequired', 'tool_xmldb', 'xsl'));
         }
 
         // Uncomment next line to give XSLT as much memory as possible, to enable larger Word files to be imported.
@@ -169,55 +205,15 @@ class wordconverter {
         // Close the merged XML file.
         $wordmldata .= "</pass1Container>";
 
-        // Pass 1 - convert WordML into linear XHTML.
-        // Create a temporary file to store the merged WordML XML content to transform.
-        $tempwordmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . ".wml";
-        if ((file_put_contents($tempwordmlfilename, $wordmldata)) == 0) {
-            // Cannot save the file.
-            throw new \moodle_exception('cannotsavefile', 'error', $tempwordmlfilename);
-        }
-
-        $xsltproc = xslt_create();
-        if (!($xsltoutput = xslt_process($xsltproc, $tempwordmlfilename, $this->word2xmlstylesheet1, null, null, $parameters))) {
-            // Transformation failed.
-            $this->debug_unlink($tempwordmlfilename);
-            throw new \moodle_exception('transformationfailed', 'booktool_wordimport', $tempwordmlfilename);
-        }
-        $this->debug_unlink($tempwordmlfilename);
-        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 1 succeeded, output = " .
-        // @codingStandardsIgnoreLine     str_replace("\n", "", substr($xsltoutput, 0, 200)), DEBUG_WORDIMPORT);
-
-        // Write output of Pass 1 to a temporary file, for use in Pass 2.
-        $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . ".if1";
-        $xsltoutput = str_replace('<p xmlns="http://www.w3.org/1999/xhtml"', '<p', $xsltoutput);
-        $xsltoutput = str_replace('<span xmlns="http://www.w3.org/1999/xhtml"', '<span', $xsltoutput);
-        $xsltoutput = str_replace(' xmlns=""', '', $xsltoutput);
-        if ((file_put_contents($tempxhtmlfilename, $xsltoutput )) == 0) {
-            // Cannot save the file.
-            throw new \moodle_exception('cannotsavefile', 'error', $tempxhtmlfilename);
-        }
+        // Pass 1 - convert WordML into linear XHTML, and clean up superfluous namespaces.
+        $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1, $parameters);
+        $xsltoutput = $this->clean_namespaces($xsltoutput);
 
         // Pass 2 - tidy up linear XHTML a bit.
-        if (!($xsltoutput = xslt_process($xsltproc, $tempxhtmlfilename, $this->word2xmlstylesheet2, null, null, $parameters))) {
-            // Transformation failed.
-            $this->debug_unlink($tempxhtmlfilename);
-            throw new \moodle_exception('transformationfailed', 'booktool_wordimport', $tempxhtmlfilename);
-        }
-        $this->debug_unlink($tempxhtmlfilename);
-
-        // Strip out superfluous namespace declarations on paragraph elements, which Moodle 2.7+ on Windows seems to throw in.
-        $xsltoutput = str_replace('<p xmlns="http://www.w3.org/1999/xhtml"', '<p', $xsltoutput);
-        $xsltoutput = str_replace('<span xmlns="http://www.w3.org/1999/xhtml"', '<span', $xsltoutput);
-        $xsltoutput = str_replace(' xmlns=""', '', $xsltoutput);
+        $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2, $parameters);
+        $xsltoutput = $this->clean_namespaces($xsltoutput);
         // Remove 'mml:' prefix from child MathML element and attributes for compatibility with MathJax.
-        $xsltoutput = str_replace('<mml:', '<', $xsltoutput);
-        $xsltoutput = str_replace('</mml:', '</', $xsltoutput);
-        $xsltoutput = str_replace(' mathvariant="normal"', '', $xsltoutput);
-        $xsltoutput = str_replace(' xmlns:mml="http://www.w3.org/1998/Math/MathML"', '', $xsltoutput);
-        $xsltoutput = str_replace('<math>', '<math xmlns="http://www.w3.org/1998/Math/MathML">', $xsltoutput);
-
-        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": Import XSLT Pass 2 succeeded, output = " .
-        // @codingStandardsIgnoreLine     str_replace("\n", "", substr($xsltoutput, 500, 2000)), DEBUG_WORDIMPORT);
+        $xsltoutput = $this->clean_mathml_namespaces($xsltoutput);
 
         // Keep the converted XHTML file for debugging if developer debugging enabled.
         if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
@@ -226,55 +222,37 @@ class wordconverter {
         }
 
         return $xsltoutput;
-    }   // End function booktool_wordimport_convert_to_xhtml.
-
+    }   // End import function.
 
     /**
-     * Export book HTML into Word-compatible XHTML format
+     * Export generic XHTML into Word-compatible XHTML format
      *
      * Use an XSLT script to do the job, as it is much easier to implement this,
      * and Moodle sites are guaranteed to have an XSLT processor available (I think).
      *
-     * @param string $content all HTML content from a book or chapter
+     * @param string $xhtmldata XHTML content from a book, book chapter, question bank category, glossary, etc.
+     * @param int $heading1styleoffset map HTML heading element to Word Heading style level
      * @return string Word-compatible XHTML text
      */
-    public function export( $content ) {
+    public function export(string $xhtmldata, int $heading1styleoffset = 3) {
         global $CFG, $USER, $COURSE, $OUTPUT;
 
-
-        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . '($content = "' . str_replace("\n", "", substr($content, 80, 500)) . ' ...")', DEBUG_WORDIMPORT);
-
-        // XHTML template for Word file CSS styles formatting.
-        $htmltemplatefilepath = $this->wordfiletemplate;
-        $stylesheet = $this->exportstylesheet;
-
-        // Check that XSLT is installed, and the XSLT stylesheet and XHTML template are present.
-        if (!class_exists('XSLTProcessor') || !function_exists('xslt_create')) {
-            echo $OUTPUT->notification(get_string('xsltunavailable', 'booktool_wordimport'));
-            return false;
-        } else if (!file_exists($stylesheet)) {
-            // Stylesheet to transform Moodle Question XML into Word doesn't exist.
-            echo $OUTPUT->notification(get_string('stylesheetunavailable', 'booktool_wordimport', $stylesheet));
+        // Check the HTML template exists.
+        if (!file_exists($this->wordfiletemplate)) {
+            echo $OUTPUT->notification(get_string('stylesheetunavailable', 'booktool_wordimport', $this->wordfiletemplate));
             return false;
         }
-
-        // Get a temporary file name for storing the book/chapter XHTML content to transform.
-        if (!($tempxmlfilename = tempnam($CFG->tempdir . DIRECTORY_SEPARATOR, "b2w-"))) {
-            echo $OUTPUT->notification(get_string('cannotopentempfile', 'booktool_wordimport', basename($tempxmlfilename)));
-            return false;
-        }
-        unlink($tempxmlfilename);
-        $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($tempxmlfilename, ".tmp") . ".xhtm";
 
         // Uncomment next line to give XSLT as much memory as possible, to enable larger Word files to be exported.
         // @codingStandardsIgnoreLine raise_memory_limit(MEMORY_HUGE);
 
-        $cleancontent = $this->clean_html_text($content);
+        // Clean up the content to ensure it is well-formed XML and won't break the XSLT processing.
+        $cleancontent = $this->clean_html_text($xhtmldata);
 
         // Set the offset for heading styles, default is h3 becomes Heading 1.
-        $heading1styleoffset = '3';
+        // Not necessary 99% of the time, but leave it in anyway.
         if (strpos($cleancontent, '<div class="lucimoo">')) {
-            $heading1styleoffset = '1';
+            $heading1styleoffset = 1;
         }
 
         // Set parameters for XSLT transformation. Note that we cannot use $arguments though.
@@ -293,40 +271,19 @@ class wordconverter {
             'transformationfailed' => get_string('transformationfailed', 'booktool_wordimport', $this->exportstylesheet)
         );
 
-        // Write the book contents and the HTML template to a file.
+        // Assemble the book contents and the HTML template to a single XML file for easier XSLT processing.
         $xhtmloutput = "<container>\n<container><html xmlns='http://www.w3.org/1999/xhtml'><body>" .
                 $cleancontent . "</body></html></container>\n<htmltemplate>\n" .
-                file_get_contents($htmltemplatefilepath) . "\n</htmltemplate>\n</container>";
-        if ((file_put_contents($tempxhtmlfilename, $xhtmloutput)) == 0) {
-            echo $OUTPUT->notification(get_string('cannotwritetotempfile', 'booktool_wordimport', basename($tempxhtmlfilename)));
-            return false;
-        }
+                file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n</container>";
 
-        // Prepare for Pass 2 XSLT transformation (Pass 1 not needed because books, unlike questions, are already HTML.
-        $stylesheet = $this->exportstylesheet;
-        $xsltproc = xslt_create();
-        if (!($xsltoutput = xslt_process($xsltproc, $tempxhtmlfilename, $stylesheet, null, null, $parameters))) {
-            echo $OUTPUT->notification(get_string('transformationfailed', 'booktool_wordimport', $stylesheet));
-            $this->debug_unlink($tempxhtmlfilename);
-            return false;
-        }
-        $this->debug_unlink($tempxhtmlfilename);
+        // Do Pass 2 XSLT transformation (Pass 1 must be done in separate convert() call if necessary).
+        $xsltoutput = $this->convert($xhtmloutput, $this->exportstylesheet, $parameters);
+        $xsltoutput = $this->clean_namespaces($xsltoutput);
+        $xsltoutput = $this->clean_comments($xsltoutput);
+        $xsltoutput = $this->clean_xmldecl($xsltoutput);
 
-        // Strip out any redundant namespace attributes, which XSLT on Windows seems to add.
-        $xsltoutput = str_replace(' xmlns=""', '', $xsltoutput);
-        $xsltoutput = str_replace(' xmlns="http://www.w3.org/1999/xhtml"', '', $xsltoutput);
-        // Unescape double minuses if they were substituted during CDATA content clean-up.
-        $xsltoutput = str_replace("WORDIMPORTMinusMinus", "--", $xsltoutput);
-
-        // Strip off the XML declaration, if present, since Word doesn't like it.
-        if (strncasecmp($xsltoutput, "<?xml ", 5) == 0) {
-            $content = substr($xsltoutput, strpos($xsltoutput, "\n"));
-        } else {
-            $content = $xsltoutput;
-        }
-
-        return $content;
-    }   // End booktool_wordimport_export function.
+        return $xsltoutput;
+    }   // End export function.
 
     /**
      * Get images and write them as base64 inside the HTML content
@@ -374,6 +331,33 @@ class wordconverter {
         return '';
     }
 
+     /**
+     * Replace escaped comment placeholders with original double-minus token
+     *
+     * @param string $xhtmldata data processed by XSLT
+     * @return string cleaned XHTML content
+     */
+    public function clean_comments(string $xhtmldata) {
+       // Unescape double minuses if they were substituted during CDATA content clean-up.
+        $cleanxhtml = str_replace("WORDIMPORTMinusMinus", "--", $xhtmldata);
+        return $cleanxhtml;
+    }
+
+    /**
+     * Strip out any superfluous default namespaces inserted by XSLT processing
+     *
+     * @param string $xhtmldata data processed by XSLT
+     * @return string cleaned XHTML content
+     */
+    public function clean_xmldecl(string $xhtmldata) {
+        // Strip off the XML declaration, if present, since Word doesn't like it.
+        if (strncasecmp($xhtmldata, "<?xml ", 5) == 0) {
+            $cleanxhtml = substr($xsltoutput, strpos($xhtmldata, "\n"));
+        } else {
+            $cleanxhtml = $xhtmldata;
+        }
+        return $cleanxhtml;
+    }
 
     /**
      * Clean HTML content
@@ -423,6 +407,34 @@ class wordconverter {
         $cleanxhtml = preg_replace('/\xad/u', '', $cleanxhtml);
 
         return $cleanxhtml;
+    }
+
+    /**
+     * Strip out any superfluous default namespaces inserted by XSLT processing
+     *
+     * @param string $xhtmldata data processed by XSLT
+     * @return string cleaned XHTML content
+     */
+    private function clean_namespaces(string $xhtmldata) {
+        $cleanxhtml = str_replace('<p xmlns="http://www.w3.org/1999/xhtml"', '<p', $xhtmldata);
+        $cleanxhtml = str_replace('<span xmlns="http://www.w3.org/1999/xhtml"', '<span', $cleanxhtml);
+        $cleanxhtml = str_replace(' xmlns=""', '', $cleanxhtml);
+        return $cleanxhtml;
+    }
+
+    /**
+     * Clean MathML markup to suit MathJax presentation on Moodle
+     *
+     * @param string $xhtmldata data processed by XSLT
+     * @return string cleaned MathML content
+     */
+    private function clean_mathml_namespaces(string $xhtmldata) {
+        $cleanmml = str_replace('<mml:', '<', $xhtmldata);
+        $cleanmml = str_replace('</mml:', '</', $cleanmml);
+        $cleanmml = str_replace(' mathvariant="normal"', '', $cleanmml);
+        $cleanmml = str_replace(' xmlns:mml="http://www.w3.org/1998/Math/MathML"', '', $cleanmml);
+        $cleanmml = str_replace('<math>', '<math xmlns="http://www.w3.org/1998/Math/MathML">', $cleanmml);
+        return $cleanmml;
     }
 
     /**
