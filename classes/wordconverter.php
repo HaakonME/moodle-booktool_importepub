@@ -26,7 +26,7 @@ namespace booktool_wordimport;
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once(__DIR__.'/xslemulatexslt.inc');
+require_once(__DIR__.'/xslemulatexslt.php');
 
 /**
  * Import HTML pages from a Word file
@@ -86,7 +86,7 @@ class wordconverter {
         // Create the temporary file based on the temporary name, but add a suitable suffix for easier debugging.
         $tempxmlfilename = dirname($tempxmlfilename) . DIRECTORY_SEPARATOR . basename($tempxmlfilename, ".tmp") . ".xml";
         if ((file_put_contents($tempxmlfilename, $xmldata)) == 0) {
-            throw new \moodle_exception('cannotsavefile', 'error', $tempwordmlfilename);
+            throw new \moodle_exception('cannotsavefile', 'error', $tempxmlfilename);
         }
 
         // Run the XSLT script using the PHP xsl library.
@@ -331,14 +331,14 @@ class wordconverter {
         return '';
     }
 
-     /**
+    /**
      * Replace escaped comment placeholders with original double-minus token
      *
      * @param string $xhtmldata data processed by XSLT
      * @return string cleaned XHTML content
      */
     public function clean_comments(string $xhtmldata) {
-       // Unescape double minuses if they were substituted during CDATA content clean-up.
+        // Unescape double minuses if they were substituted during CDATA content clean-up.
         $cleanxhtml = str_replace("WORDIMPORTMinusMinus", "--", $xhtmldata);
         return $cleanxhtml;
     }
@@ -352,7 +352,7 @@ class wordconverter {
     public function clean_xmldecl(string $xhtmldata) {
         // Strip off the XML declaration, if present, since Word doesn't like it.
         if (strncasecmp($xhtmldata, "<?xml ", 5) == 0) {
-            $cleanxhtml = substr($xsltoutput, strpos($xhtmldata, "\n"));
+            $cleanxhtml = substr($xhtmldata, strpos($xhtmldata, "\n"));
         } else {
             $cleanxhtml = $xhtmldata;
         }
