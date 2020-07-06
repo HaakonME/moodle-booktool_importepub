@@ -44,17 +44,25 @@ class wordconverter {
     */
     private $word2xmlstylesheet1 = __DIR__ . "/wordml2xhtmlpass1.xsl"; // Convert WordML into basic XHTML.
     /*
-     * @var string Stylesheet to clean XHTML up and insert images as Base64-encoded data
+     * @var string Stylesheet to clean XHTML up and insert images as Base64-encoded data.
     */
     private $word2xmlstylesheet2 = __DIR__ . "/wordml2xhtmlpass2.xsl"; // Refine basic XHTML into Word-compatible XHTML.
     /*
-     * @var string XHTML template for exporting content, with Word-compatible CSS style definitions
+     * @var string XHTML template for exporting content, with Word-compatible CSS style definitions.
     */
     private $wordfiletemplate = __DIR__ . '/wordfiletemplate.html';
     /*
-     * @var string Stylesheet to export generic XHTML into Word-compatible XHTML
+     * @var string Stylesheet to export generic XHTML into Word-compatible XHTML.
     */
     private $exportstylesheet = __DIR__ . "/xhtml2wordpass2.xsl";
+    /*
+     * @var string How should images be handled: embedded as Base64-encoded data, or referenced (default).
+    */
+    private $imagehandling = 'referenced';
+    /*
+     * @var int Word heading style level to HTML element mapping, default "Heading 1" = <h3>
+    */
+    private $heading1styleoffset = 3;
 
     /**
      * Process XML using XSLT script
@@ -79,7 +87,7 @@ class wordconverter {
         }
 
         // Get a temporary file name for storing the XML content to transform.
-        if (!($tempxmlfilename = tempnam($CFG->tempdir, "b2x-"))) {
+        if (!($tempxmlfilename = tempnam($CFG->tempdir, "wcx"))) {
             throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
         }
 
@@ -128,15 +136,6 @@ class wordconverter {
             throw new \moodle_exception('filemissing', 'moodle', $CFG->wwwroot, $this->word2xmlstylesheet1);
         }
 
-        // Set common parameters for all XSLT transformations.
-        $parameters = array (
-            'moodle_language' => current_language(),
-            'moodle_textdirection' => (right_to_left()) ? 'rtl' : 'ltr',
-            'heading1stylelevel' => '3',
-            'pluginname' => 'booktool_wordimport', // Include plugin name to control image data handling inside XSLT.
-            'debug_flag' => DEBUG_WORDIMPORT
-        );
-
         // Pre-XSLT preparation: merge the WordML and image content from the .docx Word file into one large XML file.
         // Initialise an XML string to use as a wrapper around all the XML files.
         $xmldeclaration = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -154,7 +153,7 @@ class wordconverter {
             $zefilesize = zip_entry_filesize($zipentry);
 
             // Insert internal images into the Zip file.
-            if (strpos($zefilename, "media")) {
+            if ($this->imagehandling == 'referenced' && strpos($zefilename, "media")) {
                 // @codingStandardsIgnoreLine $imageformat = substr($zefilename, strrpos($zefilename, ".") + 1);
                 $imagedata = zip_entry_read($zipentry, $zefilesize);
                 $imagename = basename($zefilename);
@@ -205,11 +204,20 @@ class wordconverter {
         // Close the merged XML file.
         $wordmldata .= "</pass1Container>";
 
+        // Set common parameters for both XSLT transformations.
+        $parameters = array (
+            'moodle_language' => current_language(),
+            'moodle_textdirection' => (right_to_left()) ? 'rtl' : 'ltr',
+            'heading1stylelevel' => $this->heading1styleoffset,
+            'imagehandling' => $this->imagehandling, // Are images embedded or referenced.
+            'debug_flag' => '1'
+        );
+
         // Pass 1 - convert WordML into linear XHTML, and clean up superfluous namespaces.
         $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1, $parameters);
         $xsltoutput = $this->clean_namespaces($xsltoutput);
 
-        // Pass 2 - tidy up linear XHTML a bit.
+        // Pass 2 - tidy up linear XHTML and strip superfluous namespaces that are sometimes added.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2, $parameters);
         $xsltoutput = $this->clean_namespaces($xsltoutput);
         // Remove 'mml:' prefix from child MathML element and attributes for compatibility with MathJax.
@@ -357,6 +365,41 @@ class wordconverter {
             $cleanxhtml = $xhtmldata;
         }
         return $cleanxhtml;
+    }
+
+    /**
+     * Get the HTML body from a converted Word file
+     *
+     * @param string $xhtmldata complete XHTML text including head element metadata
+     * @return string XHTML text inside <body> element
+     */
+    public function body_only($xhtmldata) {
+        $matches = null;
+        if (preg_match('/<body[^>]*>(.+)<\/body>/is', $xhtmldata, $matches)) {
+            return $matches[1];
+        } else {
+            return $xhtmldata;
+        }
+    }
+
+    /**
+     * Set the type of image handling to do
+     *
+     * @param string $imagehandling Embedded or Referenced images
+     * @return void
+     */
+    public function set_imagehandling(string $imagehandling) {
+        $this->imagehandling = $imagehandling;
+    }
+
+    /**
+     * Set the mapping between Word Heading style level, and HTML heading element
+     *
+     * @param int $headinglevel Heading style level (e.g. 1, 2 or 3)
+     * @return void
+     */
+    public function set_heading1styleoffset(int $headinglevel) {
+        $this->heading1styleoffset = $headinglevel;
     }
 
     /**

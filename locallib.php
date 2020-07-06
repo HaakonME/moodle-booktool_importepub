@@ -57,7 +57,7 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
     $zipfile = new ZipArchive;
     if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
         // Cannot open zip file.
-        throw new moodle_exception('cannotopenzip', 'error');
+        throw new \moodle_exception('cannotopenzip', 'error');
     }
 
     // Add any images to the Zip file.
@@ -138,7 +138,7 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
         );
     $zipfile = $fs->create_file_from_pathname($zipfilerecord, $zipfilename);
 
-    // Call the standard HTML import function to really import the content.
+    // Call the core HTML import function to really import the content.
     // Argument 2, value 2 = Each HTML file represents 1 chapter.
     toolbook_importhtml_import_chapters($zipfile, 2, $book, $context);
 

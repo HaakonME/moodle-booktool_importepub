@@ -36,7 +36,7 @@
     <xsl:preserve-space elements="x:span x:p"/>
 
     <xsl:param name="debug_flag" select="0"/>
-    <xsl:param name="pluginname"/>
+    <xsl:param name="imagehandling"/>
     <xsl:param name="course_id"/>
     <xsl:param name="heading1stylelevel"/> <!-- Should be 1 for Books and WordTable, 3 for Atto -->
 
@@ -64,7 +64,7 @@
     <xsl:template match="/">
         <xsl:apply-templates/>
     </xsl:template>
-    
+
     <!-- Start: Identity transformation -->
     <xsl:template match="*">
         <xsl:copy>
@@ -77,14 +77,14 @@
         <xsl:copy/>
     </xsl:template>
     <!-- End: Identity transformation -->
-    
+
     <xsl:template match="text()">
         <xsl:value-of select="translate(., '&#x2009;', '&#x202f;')"/>
     </xsl:template>
 
     <!-- Remove empty class attributes -->
     <xsl:template match="@class[.='']"/>
-    
+
     <!-- Omit superfluous MathML markup attributes -->
     <xsl:template match="@mathvariant"/>
 
@@ -276,7 +276,7 @@
             <xsl:apply-templates/>
         </xsl:copy>
     </xsl:template>
-    
+
     <!-- Demote Heading styles by the required amount -->
     <xsl:template match="x:p[starts-with(@class, 'heading')]" priority="2">
         <xsl:variable name="heading_level" select="substring-after(@class, 'heading')"/>
