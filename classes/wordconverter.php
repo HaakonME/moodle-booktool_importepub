@@ -18,7 +18,7 @@
  * Import/Export Microsoft Word files library.
  *
  * @package    booktool_wordimport
- * @copyright  2016 Eoin Campbell
+ * @copyright  2020 Eoin Campbell
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -86,15 +86,9 @@ class wordconverter {
             throw new \moodle_exception(get_string('stylesheetunavailable', 'booktool_wordimport', $xslfile));
         }
 
-        // Get a temporary file name for storing the XML content to transform.
-        if (!($tempxmlfilename = tempnam($CFG->tempdir, "wcx"))) {
+        // Get a temporary file and store the XML content to transform.
+        if (!($tempxmlfilename = tempnam($CFG->tempdir, "wcx")) || (file_put_contents($tempxmlfilename, $xmldata)) == 0) {
             throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
-        }
-
-        // Create the temporary file based on the temporary name, but add a suitable suffix for easier debugging.
-        $tempxmlfilename = dirname($tempxmlfilename) . DIRECTORY_SEPARATOR . basename($tempxmlfilename, ".tmp") . ".xml";
-        if ((file_put_contents($tempxmlfilename, $xmldata)) == 0) {
-            throw new \moodle_exception('cannotsavefile', 'error', $tempxmlfilename);
         }
 
         // Run the XSLT script using the PHP xsl library.

@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 // Development: turn on all debug messages and strict warnings.
-define('DEBUG_WORDIMPORT', E_ALL);
-// @codingStandardsIgnoreLine define('DEBUG_WORDIMPORT', 0);
+// @codingStandardsIgnoreLine define('DEBUG_WORDIMPORT', E_ALL);
+define('DEBUG_WORDIMPORT', 0);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once($CFG->dirroot.'/course/lib.php');
@@ -141,7 +141,6 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
     // Call the core HTML import function to really import the content.
     // Argument 2, value 2 = Each HTML file represents 1 chapter.
     toolbook_importhtml_import_chapters($zipfile, 2, $book, $context);
-
 }
 
 
