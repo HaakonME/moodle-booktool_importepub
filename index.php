@@ -22,21 +22,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require(dirname(__FILE__).'/../../../../config.php');
-require_once(dirname(__FILE__).'/locallib.php');
-require_once(dirname(__FILE__).'/import_form.php');
+require(__DIR__.'/../../../../config.php');
+require_once(__DIR__.'/locallib.php');
+require_once(__DIR__.'/import_form.php');
 
-use \booktool_wordimport\wordconverter;
-
-$id        = required_param('id', PARAM_INT);           // Course Module ID.
+$id = required_param('id', PARAM_INT); // Course Module ID.
+$action = optional_param('action', 'import', PARAM_TEXT);  // Import or export.
 $chapterid = optional_param('chapterid', 0, PARAM_INT); // Chapter ID.
-$action = optional_param('action', 'import', PARAM_TEXT);
 
 // Security checks.
-$cm = get_coursemodule_from_id('book', $id, 0, false, MUST_EXIST);
-$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+list ($course, $cm) = get_course_and_cm_from_cmid($id, 'book');
 $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
-
 require_course_login($course, true, $cm);
 
 // Should update capabilities to separate import and export permissions.
@@ -58,62 +54,9 @@ if ($mform->is_cancelled()) {
     } else {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
-} else if ($action == 'export' and $chapterid) {
-    // Export the current chapter into Word.
-    $chapter = $DB->get_record('book_chapters', array('id' => $chapterid, 'bookid' => $book->id), '*', MUST_EXIST);
-    unset($id);
-    unset($chapterid);
-
-    if ($chapter->hidden) {
-        require_capability('mod/book:viewhiddenchapters', $context);
-    }
-
-    // Include the book title at the top of the chapter.
-    $chaptertext = '<p class="MsoTitle">' . $book->name . "</p>\n";
-    $chaptertext .= '<div class="chapter">';
-
-    // Check if the chapter title is duplicated inside the content, and include it if not.
-    if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
-        $chaptertext .= "<h1>" . $chapter->title . "</h1>\n";
-    } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
-        $chaptertext .= "<h2>" . $chapter->title . "</h2>\n";
-    }
-    $chaptertext .= $chapter->content;
-    // Preprocess the chapter HTML to embed images.
-    $word2xml = new wordconverter();
-    $chaptertext .= $word2xml->base64_images($context->id, 'chapter', $chapter->id);
-    $chaptertext .= '</div>';
-    // Postprocess the HTML to add a wrapper template and convert embedded images to a table.
-    $chaptertext = $word2xml->export($chaptertext);
-    $filename = clean_filename($book->name . '_chap' . sprintf("%02d", $chapter->pagenum)).'.doc';
-    send_file($chaptertext, $filename, 10, 0, true, array('filename' => $filename));
-    die;
 } else if ($action == 'export') {
-    // Export the whole book into Word.
-    $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
-    unset($id);
-
-    // Read the title and introduction into a string, embedding images.
-    $booktext = '<p class="MsoTitle">' . $book->name . "</p>\n";
-    $booktext .= '<div class="chapter" id="intro">' . $book->intro;
-    $word2xml = new wordconverter();
-    $booktext .= $word2xml->base64_images($context->id, 'intro');
-    $booktext .= "</div>\n";
-
-    // Append all the chapters to the end of the string, again embedding images.
-    foreach ($allchapters as $chapter) {
-        $booktext .= '<div class="chapter" id="' . $chapter->id . '">';
-        // Check if the chapter title is duplicated inside the content, and include it if not.
-        if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
-            $booktext .= "<h1>" . $chapter->title . "</h1>\n";
-        } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
-            $booktext .= "<h2>" . $chapter->title . "</h2>\n";
-        }
-        $booktext .= $chapter->content;
-        $booktext .= $word2xml->base64_images($context->id, 'chapter', $chapter->id);
-        $booktext .= "</div>\n";
-    }
-    $booktext = $word2xml->export($booktext);
+    // Export the book into a Word file
+    $booktext = booktool_wordimport_export($book, $context, $chapterid);
     $filename = clean_filename($book->name) . '.doc';
     send_file($booktext, $filename, 10, 0, true, array('filename' => $filename));
     die;
@@ -141,15 +84,14 @@ if ($mform->is_cancelled()) {
     }
 
     // Convert the Word file content and import it into the book.
-    booktool_wordimport_import_word($tmpfilename, $book, $context, $splitonsubheadings);
+    booktool_wordimport_import($tmpfilename, $book, $context, $splitonsubheadings);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php', array('id' => $id)));
     echo $OUTPUT->footer();
     die;
 }
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading($book->name);
 
-    $mform->display();
-
-    echo $OUTPUT->footer();
+echo $OUTPUT->header();
+echo $OUTPUT->heading($book->name);
+$mform->display();
+echo $OUTPUT->footer();

@@ -23,9 +23,6 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-// Development: turn on all debug messages and strict warnings.
-// @codingStandardsIgnoreLine define('DEBUG_WORDIMPORT', E_ALL);
-define('DEBUG_WORDIMPORT', 0);
 
 require_once(dirname(__FILE__).'/lib.php');
 require_once($CFG->dirroot.'/course/lib.php');
@@ -44,7 +41,7 @@ use \booktool_wordimport\wordconverter;
  * @param bool $splitonsubheadings
  * @return void
  */
-function booktool_wordimport_import_word($wordfilename, $book, $context, $splitonsubheadings) {
+function booktool_wordimport_import($wordfilename, $book, $context, $splitonsubheadings) {
     global $CFG;
 
     // Convert the Word file content into XHTML and an array of images.
@@ -143,6 +140,54 @@ function booktool_wordimport_import_word($wordfilename, $book, $context, $splito
     toolbook_importhtml_import_chapters($zipfile, 2, $book, $context);
 }
 
+/**
+ * Export HTML pages to a Word file
+ *
+ * @param stdClass $book Book to export
+ * @param context_module $context Current course context
+ * @param int $chapterid The chapter to export (optional)
+ * @return string
+ */
+function booktool_wordimport_export(stdClass $book, context_module $context, int $chapterid = 0) {
+    global $CFG, $DB, $USER;
+
+    // Export a single chapter or the whole book into Word.
+    $allchapters = array();
+    $booktext = '';
+    $word2xml = new wordconverter();
+    if ($chapterid == 0) {
+        $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
+        // Read the title and introduction into a string, embedding images.
+        $booktext .= '<p class="MsoTitle">' . $book->name . "</p>\n";
+        $booktext .= '<div class="chapter" id="intro">' . $book->intro;
+        // This is probably wrong.
+        $booktext .= $word2xml->base64_images($context->id, 'intro');
+        $booktext .= "</div>\n";
+    } else {
+        $allchapters[0] = $DB->get_record('book_chapters', array('bookid' => $book->id, 'id' => $chapterid), '*', MUST_EXIST);
+    }
+
+    // Append all the chapters to the end of the string, again embedding images.
+    foreach ($allchapters as $chapter) {
+        // Make sure the chapter is visible to the current user.
+        if (!$chapter->hidden || has_capability('mod/book:viewhiddenchapters', $context)) {
+            $booktext .= '<div class="chapter" id="' . $chapter->id . '">';
+            // Check if the chapter title is duplicated inside the content, and include it if not.
+            if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
+                $booktext .= "<h1>" . $chapter->title . "</h1>\n";
+            } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
+                $booktext .= "<h2>" . $chapter->title . "</h2>\n";
+            }
+            $booktext .= $chapter->content;
+            $booktext .= $word2xml->base64_images($context->id, 'chapter', $chapter->id);
+            $booktext .= "</div>\n";
+        }
+    }
+
+    // Convert the XHTML string into a Word-compatible version, with images converted to Base64 data.
+    $booktext = $word2xml->export($booktext, 'book');
+    return $booktext;
+}
 
 /**
  * Delete previously unzipped Word file

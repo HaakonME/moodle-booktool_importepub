@@ -40,7 +40,7 @@
 <xsl:param name="moodle_textdirection"/> <!-- Current text direction ltr or rtl -->
 <xsl:param name="moodle_release"/>  <!-- 1.9 or 2.x -->
 <xsl:param name="moodle_url"/>      <!-- Location of Moodle site -->
-<xsl:param name="moodle_username"/> <!-- Username for login -->
+<xsl:param name="moodle_module"/> <!-- Book, Glossary, Lesson or Question? -->
 <xsl:param name="heading1stylelevel" select="'3'"/>      <!-- H1 heading level in Word -->
 <xsl:param name="debug_flag" select="'0'"/>      <!-- Debugging on or off -->
 
@@ -144,7 +144,7 @@
     <xsl:comment>Author ID: <xsl:value-of select="$author_id"/></xsl:comment>
     <xsl:comment>Author username: <xsl:value-of select="$moodle_username"/></xsl:comment>
     <xsl:comment>Contains embedded images: <xsl:value-of select="$contains_embedded_images"/></xsl:comment>
-    
+
     <!-- Handle the question tables -->
     <xsl:apply-templates select="$data/htm:html/htm:body/*"/>
     <!-- Check that the content has been successfully read in: if the title is empty, include an error message in the Word file rather than leave it blank -->
@@ -189,7 +189,22 @@
 
 <xsl:template match="processing-instruction('replace')[.='insert-meta']">
     <!-- Include custom properties used by Moodle2Word Startup Word template and re-import code -->
-    <o:DC.Type><xsl:value-of select="'Book'"/></o:DC.Type>
+    <o:DC.Type>
+        <xsl:choose>
+        <xsl:when test="$moodle_module = 'book'">
+            <xsl:value-of select="'Book'"/>
+        </xsl:when>
+        <xsl:when test="$moodle_module = 'glossary'">
+            <xsl:value-of select="'Glossary'"/>
+        </xsl:when>
+        <xsl:when test="$moodle_module = 'lesson'">
+            <xsl:value-of select="'Lesson'"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:value-of select="Question"/>
+        </xsl:otherwise>
+        </xsl:choose>
+    </o:DC.Type>
     <o:moodleCourseID><xsl:value-of select="$course_id"/></o:moodleCourseID>
     <o:moodleImages><xsl:value-of select="$contains_embedded_images"/></o:moodleImages>
     <o:moodleLanguage><xsl:value-of select="$moodle_language"/></o:moodleLanguage>
@@ -226,6 +241,60 @@
     </xsl:when>
     <xsl:otherwise>
         <xsl:value-of select="$word_language_and_locale"/>
+    </xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<xsl:template match="processing-instruction('replace')[.='insert-styletemplate']">
+    <!-- Set the language and text direction of the Word Normal style -->
+
+    <xsl:choose>
+    <xsl:when test="$moodle_module = 'book'">
+        <xsl:value-of select="'moodleBook.dotx'"/>
+    </xsl:when>
+    <xsl:when test="$moodle_module = 'glossary'">
+        <xsl:value-of select="'moodleGlossary.dotx'"/>
+    </xsl:when>
+    <xsl:when test="$moodle_module = 'lesson'">
+        <xsl:value-of select="'moodleLesson.dotx'"/>
+    </xsl:when>
+    <xsl:otherwise>
+        <xsl:value-of select="moodleQuestion.dotx"/>
+    </xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<xsl:template match="processing-instruction('replace')[.='insert-styletemplateelement']">
+    <!-- Set the language and text direction of the Word Normal style -->
+
+    <xsl:choose>
+    <xsl:when test="$moodle_module = 'book'">
+        <xsl:element name="w:AttachedTemplate">
+            <xsl:attribute name="HRef">
+                <xsl:value-of select="'moodleBook.dotx'"/>
+            </xsl:attribute>
+        </xsl:element>
+    </xsl:when>
+    <xsl:when test="$moodle_module = 'glossary'">
+        <xsl:element name="w:AttachedTemplate">
+            <xsl:attribute name="HRef">
+                <xsl:value-of select="'moodleGlossary.dotx'"/>
+            </xsl:attribute>
+        </xsl:element>
+    </xsl:when>
+    <xsl:when test="$moodle_module = 'lesson'">
+        <xsl:element name="w:AttachedTemplate">
+            <xsl:attribute name="HRef">
+                <xsl:value-of select="'moodleLesson.dotx'"/>
+            </xsl:attribute>
+        </xsl:element>
+    </xsl:when>
+    <xsl:otherwise>
+        <xsl:element name="w:AttachedTemplate">
+            <xsl:attribute name="HRef">
+                <xsl:value-of select="'moodleQuestion.dotx'"/>
+            </xsl:attribute>
+        </xsl:element>
     </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
@@ -633,7 +702,7 @@
     <xsl:variable name="image_format">
         <xsl:choose>
         <xsl:when test="contains(@src, $pluginfiles_string)">
-            <!-- Image exported from Moodle 2.x, i.e. 
+            <!-- Image exported from Moodle 2.x, i.e.
                  <img src="@@PLUGINFILE@@/filename.gif"/> <file name="filename.gif" encoding="base64">{base64 data}</file> -->
             <xsl:value-of select="substring-after(substring-before(ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@src, ';'), 'data:image/')"/>
         </xsl:when>
@@ -784,12 +853,12 @@
     ISO-8859-1 based URL-encoding demo
     Written by Mike J. Brown, mike@skew.org.
     Updated 2002-05-20.
- 
+
     No license; use freely, but credit me if reproducing in print.
- 
+
     Also see http://skew.org/xml/misc/URI-i18n/ for a discussion of
     non-ASCII characters in URIs.
- 
+
 Copied from: https://gist.github.com/nils-werner/721650
 -->
 

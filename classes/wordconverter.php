@@ -25,6 +25,7 @@
 namespace booktool_wordimport;
 
 defined('MOODLE_INTERNAL') || die;
+define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 require_once(__DIR__.'/xslemulatexslt.php');
 
@@ -233,10 +234,10 @@ class wordconverter {
      * and Moodle sites are guaranteed to have an XSLT processor available (I think).
      *
      * @param string $xhtmldata XHTML content from a book, book chapter, question bank category, glossary, etc.
-     * @param int $heading1styleoffset map HTML heading element to Word Heading style level
+     * @param string $module Where it is called from: book, glossary, lesson or question
      * @return string Word-compatible XHTML text
      */
-    public function export(string $xhtmldata, int $heading1styleoffset = 3) {
+    public function export(string $xhtmldata, string $module = 'book') {
         global $CFG, $USER, $COURSE, $OUTPUT;
 
         // Check the HTML template exists.
@@ -251,12 +252,6 @@ class wordconverter {
         // Clean up the content to ensure it is well-formed XML and won't break the XSLT processing.
         $cleancontent = $this->clean_html_text($xhtmldata);
 
-        // Set the offset for heading styles, default is h3 becomes Heading 1.
-        // Not necessary 99% of the time, but leave it in anyway.
-        if (strpos($cleancontent, '<div class="lucimoo">')) {
-            $heading1styleoffset = 1;
-        }
-
         // Set parameters for XSLT transformation. Note that we cannot use $arguments though.
         $parameters = array (
             'course_id' => $COURSE->id,
@@ -268,8 +263,8 @@ class wordconverter {
             'moodle_release' => $CFG->release,
             'moodle_url' => $CFG->wwwroot . "/",
             'moodle_username' => $USER->username,
+            'moodle_module' => $module,
             'debug_flag' => debugging('', DEBUG_WORDIMPORT),
-            'heading1stylelevel' => $heading1styleoffset,
             'transformationfailed' => get_string('transformationfailed', 'booktool_wordimport', $this->exportstylesheet)
         );
 
