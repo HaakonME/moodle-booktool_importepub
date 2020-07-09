@@ -392,6 +392,36 @@ class wordconverter {
     }
 
     /**
+     * Get text strings needed for messages and labels in a language-dependent way
+     *
+     * A string containing XML data, populated from the language folders, is returned
+     *
+     * @return string
+     */
+    private function get_text_labels() {
+
+        // Release-independent list of all strings required in the XSLT stylesheets for labels etc.
+        $textstrings = array(
+            'booktool_wordimport' => array('transformationfailed')
+            );
+
+        $expout = "<moodlelabels>\n";
+        foreach ($textstrings as $typegroup => $grouparray) {
+            foreach ($grouparray as $stringid) {
+                $namestring = $typegroup . '_' . $stringid;
+                // Clean up question type explanation, in case the default text has been overridden on the site.
+                $cleantext = get_string($stringid, $typegroup);
+                $expout .= '<data name="' . $namestring . '"><value>' . $cleantext . "</value></data>\n";
+            }
+        }
+        $expout .= "</moodlelabels>";
+        $expout = str_replace("<br>", "<br/>", $expout);
+
+        return $expout;
+    }
+
+
+    /**
      * Clean HTML content
      *
      * A string containing clean XHTML is returned

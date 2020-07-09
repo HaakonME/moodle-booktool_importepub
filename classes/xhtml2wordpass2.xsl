@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
- * XSLT stylesheet to wrap questions formatted as HTML tables with a Word-compatible wrapper that defines the styles, metadata, etc.
+ * XSLT stylesheet to embed text content into a Word-compatible wrapper that defines the styles, metadata, etc.
  *
  * @package    booktool_wordimport
  * @copyright  2016 Eoin Campbell
@@ -54,7 +54,7 @@
 
 <!-- Text labels from translated Moodle files -->
 <xsl:variable name="moodle_labels" select="/container/moodlelabels"/>
-<!-- Word-compatible XHTML template into which the questions are inserted -->
+<!-- Word-compatible XHTML template into which the XHTML contents are inserted -->
 <xsl:variable name="htmltemplate" select="/container/htmltemplate" />
 <!-- Throw away the extra wrapper elements, now we've read them into variables -->
 <xsl:template match="/container/moodlelabels"/>
@@ -64,7 +64,7 @@
 <xsl:variable name="data" select="/container/*[local-name() = 'container']" />
 <xsl:variable name="contains_embedded_images" select="count($data//htm:img[contains(@src, $base64data_string)])"/>
 
-<xsl:variable name="transformationfailed" select="$moodle_labels/data[@name = 'qformat_wordtable_transformationfailed']"/>
+<xsl:variable name="transformationfailed" select="$moodle_labels/data[@name = 'booktool_wordimport_transformationfailed']"/>
 
 <!-- Get the locale if present as part of the language definition (e.g. zh_cn) -->
 <xsl:variable name="moodle_language_locale">
@@ -133,7 +133,7 @@
     </html>
 </xsl:template>
 
-<!-- Place questions in XHTML template body -->
+<!-- Place text content in XHTML template body -->
 <xsl:template match="processing-instruction('replace')[.='insert-content']">
     <xsl:comment>Institution: <xsl:value-of select="$institution_name"/></xsl:comment>
     <xsl:comment>Moodle language: <xsl:value-of select="$moodle_language"/></xsl:comment>
@@ -145,7 +145,7 @@
     <xsl:comment>Author username: <xsl:value-of select="$moodle_username"/></xsl:comment>
     <xsl:comment>Contains embedded images: <xsl:value-of select="$contains_embedded_images"/></xsl:comment>
 
-    <!-- Handle the question tables -->
+    <!-- Handle the text content -->
     <xsl:apply-templates select="$data/htm:html/htm:body/*"/>
     <!-- Check that the content has been successfully read in: if the title is empty, include an error message in the Word file rather than leave it blank -->
     <xsl:if test="$data/htm:html/htm:head/htm:title = ''">
@@ -825,7 +825,7 @@
     <p class="{$alert_class}"><xsl:apply-templates/></p>
 </xsl:template>
 
-<!-- Delete the supplementary paragraphs containing images within each question component, as they are no longer needed -->
+<!-- Delete supplementary paragraphs containing images within each Moodle 1.9 question component, as they are no longer needed -->
 <xsl:template match="htm:div[@class = 'ImageFile']"/>
 <!-- Delete CSS file links -->
 <xsl:template match="htm:link[@type = 'text/css']"/>
