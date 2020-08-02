@@ -101,6 +101,7 @@ class wordconverter {
         }
         $this->debug_unlink($tempxmlfilename);
 
+        $xsltoutput = $this->clean_namespaces($xsltoutput);
         return $xsltoutput;
     }
 
@@ -147,16 +148,14 @@ class wordconverter {
             $zefilename = zip_entry_name($zipentry);
             $zefilesize = zip_entry_filesize($zipentry);
 
-            // Insert internal images into the Zip file.
-            if ($this->imagehandling == 'referenced' && strpos($zefilename, "media")) {
-                // @codingStandardsIgnoreLine $imageformat = substr($zefilename, strrpos($zefilename, ".") + 1);
+            // Insert internal images into the array of images.
+            if (strpos($zefilename, "media")) {
                 $imagedata = zip_entry_read($zipentry, $zefilesize);
                 $imagename = basename($zefilename);
-                $imagesuffix = strtolower(substr(strrchr($zefilename, "."), 1));
-                // GIF, PNG, JPG and JPEG handled OK, but bmp and other non-Internet formats are not.
+                $imagesuffix = strtolower(pathinfo($zefilename, PATHINFO_EXTENSION));
+                // Internet formats like GIF, PNG and JPEG are supported, but not non-Internet formats like BMP or EPS.
                 if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpg' or $imagesuffix == 'jpeg') {
                     $imagesforzipping[$imagename] = $imagedata;
-                    // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": added \"{$imagename}\" to Zip file", DEBUG_WORDIMPORT);
                 }
             } else {
                 // Look for required XML files, read and wrap it, remove the XML declaration, and add it to the XML string.
@@ -208,13 +207,11 @@ class wordconverter {
             'debug_flag' => '1'
         );
 
-        // Pass 1 - convert WordML into linear XHTML, and clean up superfluous namespaces.
+        // Pass 1 - convert WordML into linear XHTML.
         $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1, $parameters);
-        $xsltoutput = $this->clean_namespaces($xsltoutput);
 
-        // Pass 2 - tidy up linear XHTML and strip superfluous namespaces that are sometimes added.
+        // Pass 2 - tidy up linear XHTML.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2, $parameters);
-        $xsltoutput = $this->clean_namespaces($xsltoutput);
         // Remove 'mml:' prefix from child MathML element and attributes for compatibility with MathJax.
         $xsltoutput = $this->clean_mathml_namespaces($xsltoutput);
 
@@ -275,7 +272,6 @@ class wordconverter {
 
         // Do Pass 2 XSLT transformation (Pass 1 must be done in separate convert() call if necessary).
         $xsltoutput = $this->convert($xhtmloutput, $this->exportstylesheet, $parameters);
-        $xsltoutput = $this->clean_namespaces($xsltoutput);
         $xsltoutput = $this->clean_comments($xsltoutput);
         $xsltoutput = $this->clean_xmldecl($xsltoutput);
 
