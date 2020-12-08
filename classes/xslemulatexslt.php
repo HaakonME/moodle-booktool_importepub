@@ -61,7 +61,7 @@ if (true) {
     /**
      * Mimic xslt_create function call using XSLTProcessor
      *
-     * @param stdClass $proc XSLT object
+     * @param XSLTProcessor $proc XSLT object
      * @param string $xmlfile XML file to process
      * @param string $xslfile to process XML with
      * @param string $resultfile containing output
@@ -71,9 +71,9 @@ if (true) {
      */
     function xslt_process($proc, $xmlfile, $xslfile, $resultfile = null, $unsupportedargs = null, $parameters = null) {
         $doc = new DOMDocument;
-        $doc->load($xmlfile);
+        $doc->load($xmlfile, LIBXML_PARSEHUGE);
         $xsl = new DOMDocument;
-        $xsl->load($xslfile);
+        $xsl->load($xslfile, LIBXML_PARSEHUGE);
 
         // Set the html template file parameter.
         foreach ($parameters as $paramname => $paramvalue) {
