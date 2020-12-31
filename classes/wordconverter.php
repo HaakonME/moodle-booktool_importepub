@@ -101,7 +101,9 @@ class wordconverter {
         }
         $this->debug_unlink($tempxmlfilename);
 
+        // Clean namespaces.
         $xsltoutput = $this->clean_namespaces($xsltoutput);
+        $xsltoutput = $this->clean_mathml_namespaces($xsltoutput);
         return $xsltoutput;
     }
 
@@ -134,8 +136,9 @@ class wordconverter {
 
         // Pre-XSLT preparation: merge the WordML and image content from the .docx Word file into one large XML file.
         // Initialise an XML string to use as a wrapper around all the XML files.
-        $xmldeclaration = '<?xml version="1.0" encoding="UTF-8"?>';
+        $xmldeclaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $wordmldata = $xmldeclaration . "\n<pass1Container>\n";
+        $imagestring = "";
 
         $zipentry = zip_read($zipres);
         while ($zipentry) {
@@ -153,9 +156,17 @@ class wordconverter {
                 $imagedata = zip_entry_read($zipentry, $zefilesize);
                 $imagename = basename($zefilename);
                 $imagesuffix = strtolower(pathinfo($zefilename, PATHINFO_EXTENSION));
+                if ($imagesuffix == 'jpg') {
+                    $imagesuffix = "jpeg";
+                } elseif ($imagesuffix == 'wmf') {
+                    $imagesuffix = "x-wmf";
+                }
                 // Internet formats like GIF, PNG and JPEG are supported, but not non-Internet formats like BMP or EPS.
-                if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpg' or $imagesuffix == 'jpeg') {
+                if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpeg' or $imagesuffix == 'x-wmf') {
                     $imagesforzipping[$imagename] = $imagedata;
+                    $imagemimetype = "image/" . $imagesuffix;
+                    $imagestring .= '<file filename="media/' . $imagename . '" mime-type="' . $imagemimetype . '">';
+                    $imagestring .= base64_encode($imagedata) . "</file>\n";
                 }
             } else {
                 // Look for required XML files, read and wrap it, remove the XML declaration, and add it to the XML string.
@@ -195,8 +206,8 @@ class wordconverter {
         }  // End while loop.
         zip_close($zipres);
 
-        // Close the merged XML file.
-        $wordmldata .= "</pass1Container>";
+        // Add Base64 images section and close the merged XML file.
+        $wordmldata .= "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n"  . "</pass1Container>";
 
         // Set common parameters for both XSLT transformations.
         $parameters = array (
@@ -209,15 +220,18 @@ class wordconverter {
 
         // Pass 1 - convert WordML into linear XHTML.
         $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1, $parameters);
+        // Keep the converted XHTML file for debugging if developer debugging enabled.
+        if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
+            $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . "p1.xhtml";
+            file_put_contents($tempxhtmlfilename, $xsltoutput);
+        }
 
         // Pass 2 - tidy up linear XHTML.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2, $parameters);
-        // Remove 'mml:' prefix from child MathML element and attributes for compatibility with MathJax.
-        $xsltoutput = $this->clean_mathml_namespaces($xsltoutput);
 
         // Keep the converted XHTML file for debugging if developer debugging enabled.
         if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
-            $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . ".xhtml";
+            $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . "p2.xhtml";
             file_put_contents($tempxhtmlfilename, $xsltoutput);
         }
 
@@ -398,7 +412,7 @@ class wordconverter {
 
         // Release-independent list of all strings required in the XSLT stylesheets for labels etc.
         $textstrings = array(
-            'booktool_wordimport' => array('transformationfailed')
+            'booktool_wordimport' => array('transformationfailed', 'encodedimageswarning')
             );
 
         $expout = "<moodlelabels>\n";

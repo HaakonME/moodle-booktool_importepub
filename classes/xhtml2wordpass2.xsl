@@ -65,6 +65,7 @@
 <xsl:variable name="contains_embedded_images" select="count($data//htm:img[contains(@src, $base64data_string)])"/>
 
 <xsl:variable name="transformationfailed" select="$moodle_labels/data[@name = 'booktool_wordimport_transformationfailed']"/>
+<xsl:variable name="encodedimageswarning" select="$moodle_labels/data[@name = 'booktool_wordimport_encodedimageswarning']"/>
 
 <!-- Get the locale if present as part of the language definition (e.g. zh_cn) -->
 <xsl:variable name="moodle_language_locale">
@@ -145,6 +146,9 @@
     <xsl:comment>Author username: <xsl:value-of select="$moodle_username"/></xsl:comment>
     <xsl:comment>Contains embedded images: <xsl:value-of select="$contains_embedded_images"/></xsl:comment>
 
+    <xsl:if test="$contains_embedded_images != 0">
+        <p class="Warning"><xsl:value-of disable-output-escaping="yes" select="$encodedimageswarning"/></p>
+    </xsl:if>
     <!-- Handle the text content -->
     <xsl:apply-templates select="$data/htm:html/htm:body/*"/>
     <!-- Check that the content has been successfully read in: if the title is empty, include an error message in the Word file rather than leave it blank -->

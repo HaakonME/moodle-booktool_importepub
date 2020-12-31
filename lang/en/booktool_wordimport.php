@@ -24,28 +24,29 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Microsoft Word file Import/Export (Book)';
-$string['wordimport:export'] = 'Export Microsoft Word file';
-$string['wordimport:import'] = 'Import Microsoft Word file';
-$string['wordfile'] = 'Microsoft Word file';
-$string['wordfile_help'] = 'Upload <i>.docx</i> file saved from Microsoft Word or LibreOffice';
-$string['importchapters'] = 'Import from Microsoft Word';
+$string['cannotopentempfile'] = 'Cannot open temporary file <b>{$a}</b>';
+$string['encodedimagewarning'] = 'Warning: this file contains encoded images. See <a href="http://www.moodle2word.net/mod/page/view.php?id=143">more information on how to convert them back into embedded images</a>.';
 $string['exportbook'] = 'Export book to Microsoft Word';
 $string['exportchapter'] = 'Export this chapter to Microsoft Word';
-$string['nochapters'] = 'No book chapters found, so unable to export to Microsoft Word.';
-$string['splitonsubheadings'] = 'Create subchapters based on subheadings';
-$string['splitonsubheadings_help'] = 'Subchapters will be created on "Heading 2" styles';
-$string['replacebook'] = 'Replace book';
-$string['replacebook_help'] = 'Delete the current content of book before importing';
+$string['importchapters'] = 'Import from Microsoft Word';
 $string['insertionpoint'] = 'Insert before current chapter';
 $string['insertionpoint_help'] = 'Insert content before the current chapter, keeping all existing content';
+$string['nochapters'] = 'No book chapters found, so unable to export to Microsoft Word.';
+$string['pluginname'] = 'Microsoft Word file Import/Export (Book)';
+$string['privacy:metadata'] = 'The Microsoft Word file import/export tool for books does not store personal data.';
+$string['replacebook'] = 'Replace book';
+$string['replacebook_help'] = 'Delete the current content of book before importing';
 $string['replacechapter'] = 'Replace current chapter';
 $string['replacechapter_help'] = 'Replace the content chapter with the first chapter from the file, but keep all other chapters';
-$string['transformationfailed'] = 'XSLT transformation failed';
-$string['xsltunavailable'] = 'You need the XSLT library installed in PHP to save this Word file';
+$string['splitonsubheadings'] = 'Create subchapters based on subheadings';
+$string['splitonsubheadings_help'] = 'Subchapters will be created on "Heading 2" styles';
 $string['stylesheetunavailable'] = 'XSLT Stylesheet <b>{$a}</b> is not available';
-$string['cannotopentempfile'] = 'Cannot open temporary file <b>{$a}</b>';
-$string['privacy:metadata']      = 'The Microsoft Word file import/export tool for books does not store personal data.';
+$string['transformationfailed'] = 'XSLT transformation failed';
+$string['wordfile'] = 'Microsoft Word file';
+$string['wordfile_help'] = 'Upload <i>.docx</i> file saved from Microsoft Word or LibreOffice';
+$string['wordimport:export'] = 'Export Microsoft Word file';
+$string['wordimport:import'] = 'Import Microsoft Word file';
+$string['xsltunavailable'] = 'You need the XSLT library installed in PHP to save this Word file';
 
 // Strings used in settings.
 $string['settings'] = 'Word file import settings';
