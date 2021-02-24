@@ -55,7 +55,7 @@ if ($mform->is_cancelled()) {
         redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
 } else if ($action == 'export') {
-    // Export the book into a Word file
+    // Export the book into a Word file.
     $booktext = booktool_wordimport_export($book, $context, $chapterid);
     $filename = clean_filename($book->name) . '.doc';
     send_file($booktext, $filename, 10, 0, true, array('filename' => $filename));

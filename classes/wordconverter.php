@@ -158,7 +158,7 @@ class wordconverter {
                 $imagesuffix = strtolower(pathinfo($zefilename, PATHINFO_EXTENSION));
                 if ($imagesuffix == 'jpg') {
                     $imagesuffix = "jpeg";
-                } elseif ($imagesuffix == 'wmf') {
+                } else if ($imagesuffix == 'wmf') {
                     $imagesuffix = "x-wmf";
                 }
                 // Internet formats like GIF, PNG and JPEG are supported, but not non-Internet formats like BMP or EPS.
