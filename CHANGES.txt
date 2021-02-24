@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2021/02/24    1.3.3     Remove superfluous markup for bold and italic text.
 2020/12/13    1.3.2     Add explicit warning about encoded images in exported Word files.
 2020/08/02    1.3.1     Always clean namespaces when converting, to assist Glossary import plugin.
 2020/07/04    1.3.0     Refactored Word to XHTML conversion into a class, for re-use elsewhere.

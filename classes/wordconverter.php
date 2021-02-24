@@ -229,6 +229,11 @@ class wordconverter {
         // Pass 2 - tidy up linear XHTML.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2, $parameters);
 
+        // Remove extra superfluous markup included in the Word to XHTML conversion.
+        $xsltoutput = str_replace("</strong><strong>", "", $xsltoutput);
+        $xsltoutput = str_replace("</em><em>", "", $xsltoutput);
+        $xsltoutput = str_replace("</u><u>", "", $xsltoutput);
+
         // Keep the converted XHTML file for debugging if developer debugging enabled.
         if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
             $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . "p2.xhtml";
@@ -314,7 +319,6 @@ class wordconverter {
         }
         foreach ($files as $fileinfo) {
             // Process image files, converting them into Base64 encoding.
-            debugging(__FUNCTION__ . ": $filearea file: " . $fileinfo->get_filename(), DEBUG_WORDIMPORT);
             $fileext = strtolower(pathinfo($fileinfo->get_filename(), PATHINFO_EXTENSION));
             if ($fileext == 'png' or $fileext == 'jpg' or $fileext == 'jpeg' or $fileext == 'gif') {
                 $filename = $fileinfo->get_filename();
