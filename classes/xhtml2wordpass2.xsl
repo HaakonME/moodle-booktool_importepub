@@ -42,6 +42,7 @@
 <xsl:param name="moodle_url"/>      <!-- Location of Moodle site -->
 <xsl:param name="moodle_module"/> <!-- Book, Glossary, Lesson or Question? -->
 <xsl:param name="heading1stylelevel" select="'3'"/>      <!-- H1 heading level in Word -->
+<xsl:param name="exportimagehandling" select="'embedded'"/>      <!-- Images embedded or appended -->
 <xsl:param name="debug_flag" select="'0'"/>      <!-- Debugging on or off -->
 
 <xsl:variable name="ucase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'" />
@@ -62,10 +63,11 @@
 
 <!-- Read in the input XML into a variable, and handle unusual situation where the inner container element doesn't have an explicit namespace declaration  -->
 <xsl:variable name="data" select="/container/*[local-name() = 'container']" />
-<xsl:variable name="contains_embedded_images" select="count($data//htm:img[contains(@src, $base64data_string)])"/>
+<xsl:variable name="contains_embedded_images" select="count($data//htm:img)"/>
 
 <xsl:variable name="transformationfailed" select="$moodle_labels/data[@name = 'booktool_wordimport_transformationfailed']"/>
 <xsl:variable name="encodedimageswarning" select="$moodle_labels/data[@name = 'booktool_wordimport_encodedimageswarning']"/>
+<xsl:variable name="embeddedimageswarning" select="$moodle_labels/data[@name = 'booktool_wordimport_embeddedimageswarning']"/>
 
 <!-- Get the locale if present as part of the language definition (e.g. zh_cn) -->
 <xsl:variable name="moodle_language_locale">
@@ -144,10 +146,16 @@
     <xsl:comment>Author name: <xsl:value-of select="$author_name"/></xsl:comment>
     <xsl:comment>Author ID: <xsl:value-of select="$author_id"/></xsl:comment>
     <xsl:comment>Author username: <xsl:value-of select="$moodle_username"/></xsl:comment>
+    <xsl:comment>Image handling: <xsl:value-of select="$exportimagehandling"/></xsl:comment>
     <xsl:comment>Contains embedded images: <xsl:value-of select="$contains_embedded_images"/></xsl:comment>
 
     <xsl:if test="$contains_embedded_images != 0">
-        <p class="Warning"><xsl:value-of disable-output-escaping="yes" select="$encodedimageswarning"/></p>
+        <p class="Warning">
+            <xsl:choose>
+            <xsl:when test="$exportimagehandling = 'imagetable'"><xsl:value-of disable-output-escaping="yes" select="$encodedimageswarning"/></xsl:when>
+            <xsl:otherwise><xsl:value-of disable-output-escaping="yes" select="$embeddedimageswarning"/></xsl:otherwise>
+            </xsl:choose>
+            </p>
     </xsl:if>
     <!-- Handle the text content -->
     <xsl:apply-templates select="$data/htm:html/htm:body/*"/>
@@ -157,7 +165,7 @@
     </xsl:if>
 
     <!-- Add a table for images, if present -->
-    <xsl:if test="$contains_embedded_images != 0">
+    <xsl:if test="$contains_embedded_images != 0 and $exportimagehandling = 'imagetable'">
         <table border="1" style="display:none;"><thead>
         <tr><td colspan="7"><p class="Cell">&#160;</p></td><td><p class="QFType">Images</p></td></tr>
         <tr><td><p class="TableHead">ID</p></td><td><p class="TableHead">Name</p></td><td><p class="TableHead">Width</p></td><td><p class="TableHead">Height</p></td><td><p class="TableHead">Alt</p></td><td><p class="TableHead">Format</p></td><td><p class="TableHead">Encoding</p></td><td><p class="TableHead">Data</p></td></tr>
@@ -631,10 +639,21 @@
     <xsl:variable name="bookmark_name" select="concat('MQIMAGE_Q', $chapid, '_IID', $imgnum)"/>
 
     <xsl:choose>
-    <xsl:when test="contains(@src, $pluginfiles_string) or contains(@src, $embeddedimagedata_string)">
-        <!-- Generated from Moodle 2.x, so images are handled neatly, using a reference to the data -->
-        <!-- If imported from Word2MQXML, images are base64-encoded into the @src attribute -->
-        <a name="{$bookmark_name}" style="color:red;">x</a>
+    <xsl:when test="contains(@src, $embeddedimagedata_string)">
+        <!-- Pasted images are base64-encoded into the @src attribute -->
+        <img>
+            <xsl:call-template name="copyAttributes"/>
+        </img>
+    </xsl:when>
+    <xsl:when test="contains(@src, $pluginfiles_string)">
+        <!-- Referenced images must be embedded as base64 data for Word 2020. -->
+        <!-- Get the image data from the table passed in-->
+        <xsl:variable name="image_id" select="substring-after(@src, $pluginfiles_string)"/>
+        <xsl:variable name="imagedata" select="ancestor::htm:div[@class = 'chapter']/htm:div[@class='ImageFile']/htm:img[@title = $image_id]/@src"/>
+
+        <img src="{$imagedata}">
+            <xsl:call-template name="copyImgAttributes"/>
+        </img>
     </xsl:when>
     <xsl:otherwise>
         <img>
@@ -850,6 +869,14 @@
 <xsl:template name="copyAttributes">
     <xsl:for-each select="@*">
         <xsl:attribute name="{name()}"><xsl:value-of select="."/></xsl:attribute>
+    </xsl:for-each>
+</xsl:template>
+
+<xsl:template name="copyImgAttributes">
+    <xsl:for-each select="@*">
+        <xsl:if test="name() != 'src'">
+        <xsl:attribute name="{name()}"><xsl:value-of select="."/></xsl:attribute>
+        </xsl:if>
     </xsl:for-each>
 </xsl:template>
 
