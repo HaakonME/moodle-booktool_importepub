@@ -184,8 +184,8 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
         }
     }
 
-    // Convert the XHTML string into a Word-compatible version, with images converted to Base64 data.
-    $booktext = $word2xml->export($booktext, 'book');
+    // Convert the XHTML string into a Word-compatible version, with image data embedded in Word 365-compatible way.
+    $booktext = $word2xml->export($booktext, 'book', 'embedded');
     return $booktext;
 }
 

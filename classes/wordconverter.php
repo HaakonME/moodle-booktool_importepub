@@ -62,10 +62,6 @@ class wordconverter {
     */
     private $imagehandling = 'referenced';
     /*
-     * @var string How should images be exported: embedded inside img/@src (default for Word 2020), or an image table at the end.
-    */
-    private $exportimagehandling = 'embedded';
-    /*
      * @var int Word heading style level to HTML element mapping, default "Heading 1" = <h3>
     */
     private $heading1styleoffset = 3;
@@ -256,10 +252,14 @@ class wordconverter {
      *
      * @param string $xhtmldata XHTML content from a book, book chapter, question bank category, glossary, etc.
      * @param string $module Where it is called from: book, glossary, lesson or question
+     * @param string $imagehandling Embedded or encoded image data
      * @return string Word-compatible XHTML text
      */
-    public function export(string $xhtmldata, string $module = 'book') {
+    public function export(string $xhtmldata, string $module = 'book', string $imagehandling = 'embedded') {
         global $CFG, $USER, $COURSE, $OUTPUT;
+
+        // Append the labels with the local ones.
+        $xhtmldata = str_ireplace('</moodlelabels>', $this->get_text_labels() . '\n</moodlelabels>', $xhtmldata);
 
         // Check the HTML template exists.
         if (!file_exists($this->wordfiletemplate)) {
@@ -286,14 +286,13 @@ class wordconverter {
             'moodle_username' => $USER->username,
             'moodle_module' => $module,
             'debug_flag' => debugging('', DEBUG_WORDIMPORT),
-            'exportimagehandling' => $this->exportimagehandling // Embedded or appended images.
+            'exportimagehandling' => $imagehandling // Embedded or appended images.
         );
 
         // Assemble the book contents, the HTML template and text labels to a single XML file for easier XSLT processing.
         $xhtmloutput = "<container>\n<container><html xmlns='http://www.w3.org/1999/xhtml'><body>" .
                 $cleancontent . "</body></html></container>\n<htmltemplate>\n" .
-                file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n" .
-                $this->get_text_labels() . "</container>";
+                file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n</container>";
 
         // Do Pass 2 XSLT transformation (Pass 1 must be done in separate convert() call if necessary).
         $xsltoutput = $this->convert($xhtmloutput, $this->exportstylesheet, $parameters);
@@ -402,16 +401,6 @@ class wordconverter {
     }
 
     /**
-     * How to export images: embedded directly inside img elements, or as a table at the end.
-     *
-     * @param string $exportimagehandling Embedded or Imagetable
-     * @return void
-     */
-    public function set_exportimagehandling(string $exportimagehandling) {
-        $this->exportimagehandling = $exportimagehandling;
-    }
-
-    /**
      * Set the mapping between Word Heading style level, and HTML heading element
      *
      * @param int $headinglevel Heading style level (e.g. 1, 2 or 3)
@@ -435,7 +424,7 @@ class wordconverter {
             'booktool_wordimport' => array('transformationfailed', 'embeddedimageswarning', 'encodedimageswarning')
             );
 
-        $expout = "<moodlelabels>\n";
+        $expout = "";
         foreach ($textstrings as $typegroup => $grouparray) {
             foreach ($grouparray as $stringid) {
                 $namestring = $typegroup . '_' . $stringid;
@@ -444,7 +433,6 @@ class wordconverter {
                 $expout .= '<data name="' . $namestring . '"><value>' . $cleantext . "</value></data>\n";
             }
         }
-        $expout .= "</moodlelabels>";
         $expout = str_replace("<br>", "<br/>", $expout);
 
         return $expout;
