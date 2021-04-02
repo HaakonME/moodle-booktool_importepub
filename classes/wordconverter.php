@@ -259,7 +259,7 @@ class wordconverter {
         global $CFG, $USER, $COURSE, $OUTPUT;
 
         // Append the labels with the local ones.
-        $xhtmldata = str_ireplace('</moodlelabels>', $this->get_text_labels() . '\n</moodlelabels>', $xhtmldata);
+        $xhtmldata = str_ireplace('</moodlelabels>', $this->get_text_labels() . "\n</moodlelabels>", $xhtmldata);
 
         // Check the HTML template exists.
         if (!file_exists($this->wordfiletemplate)) {
@@ -309,18 +309,18 @@ class wordconverter {
      *
      * @param string $contextid the context ID
      * @param string $filearea filearea: chapter or intro
-     * @param string $chapterid the chapter ID (optional)
+     * @param string $chapterid the chapter or page ID (optional)
      * @return string the modified HTML with embedded images
      */
-    public function base64_images($contextid, $filearea, $chapterid = null) {
+    public function base64_images(string $contextid, string $component, string $filearea, $chapterid = null) {
         // Get the list of files embedded in the book or chapter.
         // Note that this will break on images in the Book Intro section.
         $imagestring = '';
         $fs = get_file_storage();
         if ($filearea == 'intro') {
-            $files = $fs->get_area_files($contextid, 'mod_book', $filearea);
+            $files = $fs->get_area_files($contextid, $component, $filearea);
         } else {
-            $files = $fs->get_area_files($contextid, 'mod_book', $filearea, $chapterid);
+            $files = $fs->get_area_files($contextid, $component, $filearea, $chapterid);
         }
         foreach ($files as $fileinfo) {
             // Process image files, converting them into Base64 encoding.
@@ -330,7 +330,7 @@ class wordconverter {
                 $filetype = ($fileext == 'jpg') ? 'jpeg' : $fileext;
                 $fileitemid = $fileinfo->get_itemid();
                 $filepath = $fileinfo->get_filepath();
-                $filedata = $fs->get_file($contextid, 'mod_book', $filearea, $fileitemid, $filepath, $filename);
+                $filedata = $fs->get_file($contextid, $component, $filearea, $fileitemid, $filepath, $filename);
 
                 if (!$filedata === false) {
                     $base64data = base64_encode($filedata->get_content());

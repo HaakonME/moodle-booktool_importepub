@@ -213,10 +213,13 @@
             <xsl:value-of select="'Lesson'"/>
         </xsl:when>
         <xsl:otherwise>
-            <xsl:value-of select="Question"/>
+            <xsl:value-of select="'Question'"/>
         </xsl:otherwise>
         </xsl:choose>
     </o:DC.Type>
+    <xsl:if test="$moodle_module = 'question'">
+        <o:moodleQuestionSeqNum><xsl:value-of select="count($data//htm:table) + 1"/></o:moodleQuestionSeqNum>
+    </xsl:if>
     <o:moodleCourseID><xsl:value-of select="$course_id"/></o:moodleCourseID>
     <o:moodleImages><xsl:value-of select="$contains_embedded_images"/></o:moodleImages>
     <o:moodleLanguage><xsl:value-of select="$moodle_language"/></o:moodleLanguage>
@@ -271,7 +274,7 @@
         <xsl:value-of select="'moodleLesson.dotx'"/>
     </xsl:when>
     <xsl:otherwise>
-        <xsl:value-of select="moodleQuestion.dotx"/>
+        <xsl:value-of select="'moodleQuestion.dotx'"/>
     </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
@@ -298,6 +301,13 @@
         <xsl:element name="w:AttachedTemplate">
             <xsl:attribute name="HRef">
                 <xsl:value-of select="'moodleLesson.dotx'"/>
+            </xsl:attribute>
+        </xsl:element>
+    </xsl:when>
+    <xsl:when test="$moodle_module = 'question'">
+        <xsl:element name="w:AttachedTemplate">
+            <xsl:attribute name="HRef">
+                <xsl:value-of select="'moodleQuestion.dotx'"/>
             </xsl:attribute>
         </xsl:element>
     </xsl:when>
@@ -538,7 +548,7 @@
 </xsl:template>
 
 
-<!-- Any paragraphs without an explicit class are set to have the Body Text style -->
+<!-- Convert the blockquote element into the Block Quote style for each contained p element -->
 <xsl:template match="htm:blockquote">
     <xsl:apply-templates mode="blockQuote"/>
 </xsl:template>
@@ -565,7 +575,6 @@
         <xsl:with-param name="inline" select="'true'"/>
         <xsl:with-param name="condition" select="$debug_flag = '2'"/>
     </xsl:call-template>
-
 
     <xsl:choose>
     <xsl:when test="contains(htm:img/@src, $pluginfiles_string) or contains(htm:img/@src, $embeddedimagedata_string)">
@@ -777,7 +786,6 @@
         </xsl:choose>
     </xsl:variable>
 
-    <!--<xsl:variable name="image_name" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile' and htm:img/@title = $image_file_name]/htm:img/@title"/>-->
     <xsl:variable name="image_data" select="ancestor::htm:div[@class='chapter']//htm:div[@class = 'ImageFile']/htm:img/@src"/>
     <xsl:variable name="image_format" select="substring-before(substring-after('data:image/', $image_data), ';')"/>
     <xsl:variable name="image_encoding" select="substring-after(substring-before(',', $image_data), ';')"/>

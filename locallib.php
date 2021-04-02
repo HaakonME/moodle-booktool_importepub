@@ -161,7 +161,7 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
         $booktext .= '<p class="MsoTitle">' . $book->name . "</p>\n";
         $booktext .= '<div class="chapter" id="intro">' . $book->intro;
         // This is probably wrong.
-        $booktext .= $word2xml->base64_images($context->id, 'intro');
+        $booktext .= $word2xml->base64_images($context->id, 'mod_book', 'intro');
         $booktext .= "</div>\n";
     } else {
         $allchapters[0] = $DB->get_record('book_chapters', array('bookid' => $book->id, 'id' => $chapterid), '*', MUST_EXIST);
@@ -179,7 +179,7 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
                 $booktext .= "<h2>" . $chapter->title . "</h2>\n";
             }
             $booktext .= $chapter->content;
-            $booktext .= $word2xml->base64_images($context->id, 'chapter', $chapter->id);
+            $booktext .= $word2xml->base64_images($context->id, 'mod_book', 'chapter', $chapter->id);
             $booktext .= "</div>\n";
         }
     }
