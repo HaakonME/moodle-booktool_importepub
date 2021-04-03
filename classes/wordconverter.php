@@ -25,7 +25,7 @@
 namespace booktool_wordimport;
 
 defined('MOODLE_INTERNAL') || die();
-define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
+// define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 use moodle_exception;
 require_once(__DIR__.'/xslemulatexslt.php');
@@ -221,11 +221,6 @@ class wordconverter {
 
         // Pass 1 - convert WordML into linear XHTML.
         $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1, $parameters);
-        // Keep the converted XHTML file for debugging if developer debugging enabled.
-        if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
-            $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . "p1.xhtml";
-            file_put_contents($tempxhtmlfilename, $xsltoutput);
-        }
 
         // Pass 2 - tidy up linear XHTML.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2, $parameters);
@@ -234,12 +229,6 @@ class wordconverter {
         $xsltoutput = str_replace("</strong><strong>", "", $xsltoutput);
         $xsltoutput = str_replace("</em><em>", "", $xsltoutput);
         $xsltoutput = str_replace("</u><u>", "", $xsltoutput);
-
-        // Keep the converted XHTML file for debugging if developer debugging enabled.
-        if (DEBUG_WORDIMPORT == DEBUG_DEVELOPER and debugging(null, DEBUG_DEVELOPER)) {
-            $tempxhtmlfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($filename, ".tmp") . "p2.xhtml";
-            file_put_contents($tempxhtmlfilename, $xsltoutput);
-        }
 
         return $xsltoutput;
     }   // End import function.
@@ -255,11 +244,8 @@ class wordconverter {
      * @param string $imagehandling Embedded or encoded image data
      * @return string Word-compatible XHTML text
      */
-    public function export(string $xhtmldata, string $module = 'book', string $imagehandling = 'embedded') {
+    public function export(string $xhtmldata, string $module = 'book', string $moodlelabels, string $imagehandling = 'embedded') {
         global $CFG, $USER, $COURSE, $OUTPUT;
-
-        // Append the labels with the local ones.
-        $xhtmldata = str_ireplace('</moodlelabels>', $this->get_text_labels() . "\n</moodlelabels>", $xhtmldata);
 
         // Check the HTML template exists.
         if (!file_exists($this->wordfiletemplate)) {
@@ -289,10 +275,14 @@ class wordconverter {
             'exportimagehandling' => $imagehandling // Embedded or appended images.
         );
 
-        // Assemble the book contents, the HTML template and text labels to a single XML file for easier XSLT processing.
+        // Append the Moodle text labels with the local ones for error and warning messages.
+        $moodlelabels = str_ireplace('</moodlelabels>', $this->get_text_labels() . "\n</moodlelabels>", $moodlelabels);
+
+        // Assemble the book contents, the HTML template and Moodle text labels to a single XML file for easier XSLT processing.
         $xhtmloutput = "<container>\n<container><html xmlns='http://www.w3.org/1999/xhtml'><body>" .
-                $cleancontent . "</body></html></container>\n<htmltemplate>\n" .
-                file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n</container>";
+                $cleancontent . "</body></html></container>\n" .
+                "<htmltemplate>\n" . file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n" .
+                $moodlelabels . "</container>";
 
         // Do Pass 2 XSLT transformation (Pass 1 must be done in separate convert() call if necessary).
         $xsltoutput = $this->convert($xhtmloutput, $this->exportstylesheet, $parameters);
@@ -434,10 +424,8 @@ class wordconverter {
             }
         }
         $expout = str_replace("<br>", "<br/>", $expout);
-
         return $expout;
     }
-
 
     /**
      * Clean HTML content

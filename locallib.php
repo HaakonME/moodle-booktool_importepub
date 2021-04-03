@@ -183,9 +183,10 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
             $booktext .= "</div>\n";
         }
     }
+    $moodlelabels = "<moodlelabels></moodlelabels>\n";
 
     // Convert the XHTML string into a Word-compatible version, with image data embedded in Word 365-compatible way.
-    $booktext = $word2xml->export($booktext, 'book', 'embedded');
+    $booktext = $word2xml->export($booktext, 'book', $moodlelabels, 'embedded');
     return $booktext;
 }
 

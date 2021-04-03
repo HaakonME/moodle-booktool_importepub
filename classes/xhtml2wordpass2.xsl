@@ -54,11 +54,11 @@
 <xsl:output method="xml" version="1.0" omit-xml-declaration="yes" encoding="ISO-8859-1" indent="yes" />
 
 <!-- Text labels from translated Moodle files -->
-<xsl:variable name="moodle_labels" select="/container/moodlelabels"/>
+<xsl:variable name="moodle_labels" select="//moodlelabels"/>
 <!-- Word-compatible XHTML template into which the XHTML contents are inserted -->
 <xsl:variable name="htmltemplate" select="/container/htmltemplate" />
 <!-- Throw away the extra wrapper elements, now we've read them into variables -->
-<xsl:template match="/container/moodlelabels"/>
+<xsl:template match="//moodlelabels"/>
 <xsl:template match="/container/htmltemplate"/>
 
 <!-- Read in the input XML into a variable, and handle unusual situation where the inner container element doesn't have an explicit namespace declaration  -->
@@ -150,12 +150,15 @@
     <xsl:comment>Contains embedded images: <xsl:value-of select="$contains_embedded_images"/></xsl:comment>
 
     <xsl:if test="$contains_embedded_images != 0">
+        <xsl:text>&#x0a;</xsl:text>
         <p class="Warning">
             <xsl:choose>
             <xsl:when test="$exportimagehandling = 'imagetable'"><xsl:value-of disable-output-escaping="yes" select="$encodedimageswarning"/></xsl:when>
             <xsl:otherwise><xsl:value-of disable-output-escaping="yes" select="$embeddedimageswarning"/></xsl:otherwise>
             </xsl:choose>
             </p>
+        <xsl:text>&#x0a;</xsl:text>
+
     </xsl:if>
     <!-- Handle the text content -->
     <xsl:apply-templates select="$data/htm:html/htm:body/*"/>
