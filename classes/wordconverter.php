@@ -25,7 +25,6 @@
 namespace booktool_wordimport;
 
 defined('MOODLE_INTERNAL') || die();
-// define('DEBUG_WORDIMPORT', DEBUG_DEVELOPER);
 
 use moodle_exception;
 require_once(__DIR__.'/xslemulatexslt.php');
@@ -198,8 +197,6 @@ class wordconverter {
                     // @codingStandardsIgnoreLine case "word/_rels/settings.xml.rels":
                         // @codingStandardsIgnoreLine $wordmldata .= "<settingsLinks>" . $xmlfiledata . "</settingsLinks>\n";
                         // @codingStandardsIgnoreLine break;
-                    default:
-                        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": Ignore $zefilename", DEBUG_WORDIMPORT);
                 }
             }
             // Get the next file in the Zip package.
@@ -208,7 +205,8 @@ class wordconverter {
         zip_close($zipres);
 
         // Add Base64 images section and close the merged XML file.
-        $wordmldata .= "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n"  . "</pass1Container>";
+        $wordmldata .= "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n";
+        $wordmldata .= "</pass1Container>";
 
         // Set common parameters for both XSLT transformations.
         $parameters = array (
@@ -216,7 +214,7 @@ class wordconverter {
             'moodle_textdirection' => (right_to_left()) ? 'rtl' : 'ltr',
             'heading1stylelevel' => $this->heading1styleoffset,
             'imagehandling' => $this->imagehandling, // Are images embedded or referenced.
-            'debug_flag' => '1'
+            'debug_flag' => (debugging(null, DEBUG_DEVELOPER)) ? '1' : '0'
         );
 
         // Pass 1 - convert WordML into linear XHTML.
@@ -271,7 +269,7 @@ class wordconverter {
             'moodle_url' => $CFG->wwwroot . "/",
             'moodle_username' => $USER->username,
             'moodle_module' => $module,
-            'debug_flag' => debugging('', DEBUG_WORDIMPORT),
+            'debug_flag' => (debugging(null, DEBUG_DEVELOPER)) ? '1' : '0'
             'exportimagehandling' => $imagehandling // Embedded or appended images.
         );
 
@@ -512,7 +510,7 @@ class wordconverter {
      * @return void
      */
     private function debug_unlink($filename) {
-        if (DEBUG_WORDIMPORT !== DEBUG_DEVELOPER or !(debugging(null, DEBUG_DEVELOPER))) {
+        if (!(debugging(null, DEBUG_DEVELOPER))) {
             unlink($filename);
         }
     }

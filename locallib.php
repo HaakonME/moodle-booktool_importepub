@@ -49,8 +49,8 @@ function booktool_wordimport_import($wordfilename, $book, $context, $splitonsubh
     $word2xml = new wordconverter();
     $htmlcontent = $word2xml->import($wordfilename, $imagesforzipping);
 
-    // Create a temporary Zip file to store the HTML and images for feeding to import function.
-    $zipfilename = $CFG->tempdir . DIRECTORY_SEPARATOR . basename($wordfilename, ".tmp") . ".zip";
+    // Create a temporary Zip file to store the HTML and images for feeding to the Book HTML import function.
+    $zipfilename = tempnam($CFG->tempdir, "zip");
     $zipfile = new ZipArchive;
     if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
         // Cannot open zip file.
@@ -64,7 +64,41 @@ function booktool_wordimport_import($wordfilename, $book, $context, $splitonsubh
         }
     }
 
-    // Split the single HTML file into multiple chapters based on h1 elements.
+    // Split the HTML file into sections based on headings, and add the sections to the Zip file.
+    booktool_wordimport_split($htmlcontent, $zipfile, $splitonsubheadings);
+
+    // Add the Zip file to the file storage area.
+    $fs = get_file_storage();
+    $zipfilerecord = array(
+        'contextid' => $context->id,
+        'component' => 'user',
+        'filearea' => 'draft',
+        'itemid' => $book->revision,
+        'filepath' => "/",
+        'filename' => basename($zipfilename)
+        );
+    $zipfile = $fs->create_file_from_pathname($zipfilerecord, $zipfilename);
+
+    // Call the core HTML import function to really import the content.
+    // Argument 2, value 2 = Each HTML file represents 1 chapter.
+    toolbook_importhtml_import_chapters($zipfile, 2, $book, $context);
+}
+
+/**
+ * Split HTML into multiple sections based on headings
+ *
+ * This function can be called by other plugins such as Lesson. The HTML content must have been created by mapping
+ * Heading 1 styles in Word into h3 elements in the HTML. This convention is followed because Moodle doesn't use h1
+ * elements properly, I think.
+ *
+ * @param string $htmlcontent HTML from a single Word file
+ * @param ZipArchive $zipfile Zip file to insert HTML sections into
+ * @param bool $splitonsubheadings Split on h4 as well as h3
+ * @return void
+ */
+function booktool_wordimport_split(string $htmlcontent, ZipArchive $zipfile, bool $splitonsubheadings) {
+
+    // Split the single HTML file into multiple chapters based on h3 elements.
     $h1matches = null;
     $chaptermatches = null;
     // Grab title and contents of each 'Heading 1' section, which is mapped to h3.
@@ -122,22 +156,6 @@ function booktool_wordimport_import($wordfilename, $book, $context, $splitonsubh
         }
     }
     $zipfile->close();
-
-    // Add the Zip file to the file storage area.
-    $fs = get_file_storage();
-    $zipfilerecord = array(
-        'contextid' => $context->id,
-        'component' => 'user',
-        'filearea' => 'draft',
-        'itemid' => $book->revision,
-        'filepath' => "/",
-        'filename' => basename($zipfilename)
-        );
-    $zipfile = $fs->create_file_from_pathname($zipfilerecord, $zipfilename);
-
-    // Call the core HTML import function to really import the content.
-    // Argument 2, value 2 = Each HTML file represents 1 chapter.
-    toolbook_importhtml_import_chapters($zipfile, 2, $book, $context);
 }
 
 /**
