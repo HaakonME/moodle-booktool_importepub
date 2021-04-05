@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use moodle_exception;
 require_once(__DIR__.'/xslemulatexslt.php');
+require_once($CFG->dirroot.'/mod/book/tool/importhtml/locallib.php');
 
 /**
  * Import HTML pages from a Word file
@@ -40,29 +41,22 @@ require_once(__DIR__.'/xslemulatexslt.php');
  */
 class wordconverter {
 
-    /*
-     * @var string Stylesheet to convert WordML to XHTML
-    */
+    /* @var string Stylesheet to convert WordML to XHTML */
     private $word2xmlstylesheet1 = __DIR__ . "/wordml2xhtmlpass1.xsl"; // Convert WordML into basic XHTML.
-    /*
-     * @var string Stylesheet to clean XHTML up and insert images as Base64-encoded data.
-    */
+
+    /* @var string Stylesheet to clean XHTML up and insert images as Base64-encoded data. */
     private $word2xmlstylesheet2 = __DIR__ . "/wordml2xhtmlpass2.xsl"; // Refine basic XHTML into Word-compatible XHTML.
-    /*
-     * @var string XHTML template for exporting content, with Word-compatible CSS style definitions.
-    */
+
+    /* @var string XHTML template for exporting content, with Word-compatible CSS style definitions. */
     private $wordfiletemplate = __DIR__ . '/wordfiletemplate.html';
-    /*
-     * @var string Stylesheet to export generic XHTML into Word-compatible XHTML.
-    */
+
+    /* @var string Stylesheet to export generic XHTML into Word-compatible XHTML. */
     private $exportstylesheet = __DIR__ . "/xhtml2wordpass2.xsl";
-    /*
-     * @var string How should images be handled: embedded as Base64-encoded data, or referenced (default).
-    */
+
+    /* @var string How should images be handled: embedded as Base64-encoded data, or referenced (default). */
     private $imagehandling = 'referenced';
-    /*
-     * @var int Word heading style level to HTML element mapping, default "Heading 1" = <h3>
-    */
+
+    /* @var int Word heading style level to HTML element mapping, default "Heading 1" = <h3> */
     private $heading1styleoffset = 3;
 
     /**
@@ -269,7 +263,7 @@ class wordconverter {
             'moodle_url' => $CFG->wwwroot . "/",
             'moodle_username' => $USER->username,
             'moodle_module' => $module,
-            'debug_flag' => (debugging(null, DEBUG_DEVELOPER)) ? '1' : '0'
+            'debug_flag' => (debugging(null, DEBUG_DEVELOPER)) ? '1' : '0',
             'exportimagehandling' => $imagehandling // Embedded or appended images.
         );
 
@@ -370,9 +364,9 @@ class wordconverter {
      * @return string XHTML text inside <body> element
      */
     public function body_only($xhtmldata) {
-        $matches = null;
-        if (preg_match('/<body[^>]*>(.+)<\/body>/is', $xhtmldata, $matches)) {
-            return $matches[1];
+        ;
+        if (($htmlbody = toolbook_importhtml_parse_body($xhtmldata)) != '') {
+            return $htmlbody;
         } else {
             return $xhtmldata;
         }

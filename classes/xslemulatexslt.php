@@ -23,7 +23,7 @@
  */
 
 
-// This file is copied from @link https://github.com/moodle/moodle/tree/MOODLE_19_STABLE/backup/bbxsl_emulate_xslt.inc.
+// This file is copied from {@link https://github.com/moodle/moodle/tree/MOODLE_19_STABLE/backup/bbxsl_emulate_xslt.inc}.
 
 // This file adds xslt_xxx emulation functions.
 // It is intended for systems, e.g. those running PHP 5, where:
