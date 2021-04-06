@@ -65,7 +65,7 @@ function booktool_wordimport_import($wordfilename, $book, $context, $splitonsubh
     }
 
     // Split the HTML file into sections based on headings, and add the sections to the Zip file.
-    booktool_wordimport_split($htmlcontent, $zipfile, $splitonsubheadings);
+    booktool_wordimport_split($htmlcontent, $zipfile, $splitonsubheadings, false);
 
     // Add the Zip file to the file storage area.
     $fs = get_file_storage();
@@ -94,9 +94,10 @@ function booktool_wordimport_import($wordfilename, $book, $context, $splitonsubh
  * @param string $htmlcontent HTML from a single Word file
  * @param ZipArchive $zipfile Zip file to insert HTML sections into
  * @param bool $splitonsubheadings Split on h4 as well as h3
+ * @param bool $verbose Display extra progress messages
  * @return void
  */
-function booktool_wordimport_split(string $htmlcontent, ZipArchive $zipfile, bool $splitonsubheadings) {
+function booktool_wordimport_split(string $htmlcontent, ZipArchive $zipfile, bool $splitonsubheadings, bool $verbose = false) {
 
     // Split the single HTML file into multiple chapters based on h3 elements.
     $h1matches = null;

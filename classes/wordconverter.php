@@ -233,6 +233,7 @@ class wordconverter {
      *
      * @param string $xhtmldata XHTML content from a book, book chapter, question bank category, glossary, etc.
      * @param string $module Where it is called from: book, glossary, lesson or question
+     * @param string $moodlelabels User-readable text strings that may be included in the output file
      * @param string $imagehandling Embedded or encoded image data
      * @return string Word-compatible XHTML text
      */
@@ -290,7 +291,8 @@ class wordconverter {
      * A string containing the HTML with embedded base64 images is returned
      *
      * @param string $contextid the context ID
-     * @param string $filearea filearea: chapter or intro
+     * @param string $component File component: book, question, glossary, lesson
+     * @param string $filearea File area within component
      * @param string $chapterid the chapter or page ID (optional)
      * @return string the modified HTML with embedded images
      */
