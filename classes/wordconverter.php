@@ -57,8 +57,8 @@ class wordconverter {
     /* @var string How should images be handled: embedded as Base64-encoded data, or referenced (default). */
     private $imagehandling = 'referenced';
 
-    /* @var int Word heading style level to HTML element mapping, default "Heading 1" = <h1> */
-    private $heading1styleoffset = 1;
+    /* @var int Word heading style level to HTML element mapping, default "Heading 1" = <h3>. */
+    private $heading1styleoffset = 3;
 
     /**
      * Process XML using XSLT script
@@ -290,25 +290,25 @@ class wordconverter {
     /**
      * Split HTML into multiple sections based on headings
      *
-     * The HTML content must have been created by mapping Heading 1 styles in Word into h1 elements in the HTML.
+     * The HTML content must have been created by mapping Heading 1 styles in Word into h3 elements in the HTML.
      *
      * @param string $htmlcontent HTML from a single Word file
      * @param ZipArchive $zipfile Zip file to insert HTML sections into
-     * @param bool $splitonsubheadings Split on h2 as well as h1
+     * @param bool $splitonsubheadings Split on Heading 2 (h4) as well as Heading 1 (h3) styles/elements
      * @param bool $verbose Display extra progress messages
      * @return void
      */
     public function split(string $htmlcontent, ZipArchive $zipfile, bool $splitonsubheadings, bool $verbose = false) {
 
-        // Split the single HTML file into multiple chapters based on h1 elements.
-        $h1matches = null;
+        // Split the single HTML file into multiple chapters based on h3 elements.
+        $h3matches = null;
         $chaptermatches = null;
-        // Grab title and contents of each 'Heading 1' section, which is mapped to h1.
-        $chaptermatches = preg_split('#<h1>.*</h1>#isU', $htmlcontent);
-        preg_match_all('#<h1>(.*)</h1>#i', $htmlcontent, $h1matches);
+        // Grab title and contents of each 'Heading 1' section, which is mapped to h3.
+        $chaptermatches = preg_split('#<h3>.*</h3>#isU', $htmlcontent);
+        preg_match_all('#<h3>(.*)</h3>#i', $htmlcontent, $h3matches);
         // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": n chapters = " . count($chaptermatches), DEBUG_WORDIMPORT);
 
-        // If no h1 elements are present, treat the whole file as a single chapter.
+        // If no h3 elements are present, treat the whole file as a single chapter.
         if (count($chaptermatches) == 1) {
             $zipfile->addFromString("index.htm", $htmlcontent);
         }
@@ -316,7 +316,7 @@ class wordconverter {
         // Create a separate HTML file in the Zip file for each section of content.
         for ($i = 1; $i < count($chaptermatches); $i++) {
             // Remove any tags from heading, as it prevents proper import of the chapter title.
-            $chaptitle = strip_tags($h1matches[1][$i - 1]);
+            $chaptitle = strip_tags($h3matches[1][$i - 1]);
             // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chaptitle = " . $chaptitle, DEBUG_WORDIMPORT);
             $chapcontent = $chaptermatches[$i];
             $chapfilename = sprintf("index%02d.htm", $i);
@@ -328,11 +328,11 @@ class wordconverter {
 
             if ($splitonsubheadings) {
                 // Save each subsection as a separate HTML file with a '_sub.htm' suffix.
-                $h2matches = null;
+                $h4matches = null;
                 $subchaptermatches = null;
                 // Grab title and contents of each subsection.
-                preg_match_all('#<h2>(.*)</h2>#i', $chapcontent, $h2matches);
-                $subchaptermatches = preg_split('#<h2>.*</h2>#isU', $chapcontent);
+                preg_match_all('#<h4>(.*)</h4>#i', $chapcontent, $h4matches);
+                $subchaptermatches = preg_split('#<h4>.*</h4>#isU', $chapcontent);
 
                 // First save the initial chapter content.
                 $chapcontent = $subchaptermatches[0];
@@ -343,7 +343,7 @@ class wordconverter {
 
                 // Save each subsection to a separate file.
                 for ($j = 1; $j < count($subchaptermatches); $j++) {
-                    $subchaptitle = strip_tags($h2matches[1][$j - 1]);
+                    $subchaptitle = strip_tags($h4matches[1][$j - 1]);
                     $subchapcontent = $subchaptermatches[$j];
                     $subsectionfilename = sprintf("index%02d_%02d_sub.htm", $i, $j);
                     $htmlfilecontent = "<html><head><title>{$subchaptitle}</title></head>" .

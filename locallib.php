@@ -51,11 +51,11 @@ function booktool_wordimport_import(string $wordfilename, stdClass $book, contex
     $word2xml = new wordconverter();
     $htmlcontent = $word2xml->import($wordfilename, $imagesforzipping);
 
-    // Store images in a Zip file, split the HTML file into sections,
-    // add the sections to the Zip file, and store it in Moodles' file storage area.
+    // Store images in a Zip file and split the HTML file into sections.
+    // Add the sections to the Zip file and store it in Moodles' file storage area.
     $zipfilename = tempnam($CFG->tempdir, "zip");
     $zipfile = $word2xml->zipimages($zipfilename, $imagesforzipping);
-    $word2xml->split($htmlcontent, $zipfile, $splitonsubheadings, false);
+    $word2xml->split($htmlcontent, $zipfile, $splitonsubheadings, $verbose);
     $zipfile = $word2xml->store($zipfilename, $zipfile, $context);
     unlink($zipfilename);
 
