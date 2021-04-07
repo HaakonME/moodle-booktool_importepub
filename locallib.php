@@ -65,7 +65,7 @@ function booktool_wordimport_import(string $wordfilename, stdClass $book, contex
 }
 
 /**
- * Export HTML pages to a Word file
+ * Export Book chapters to a Word file
  *
  * @param stdClass $book Book to export
  * @param context_module $context Current course context
@@ -73,7 +73,7 @@ function booktool_wordimport_import(string $wordfilename, stdClass $book, contex
  * @return string
  */
 function booktool_wordimport_export(stdClass $book, context_module $context, int $chapterid = 0) {
-    global $CFG, $DB, $USER;
+    global $DB;
 
     // Export a single chapter or the whole book into Word.
     $allchapters = array();
