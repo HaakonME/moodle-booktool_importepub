@@ -4786,7 +4786,7 @@
             </xsl:when>
             <xsl:when test="$img_rid != '' and $imagehandling = 'referenced'">
                 <!-- Use the image file name in the @src attribute -->
-                <xsl:value-of select="substring-after($img_filename, '/')"/>
+                <xsl:value-of select="substring-after($img_filename, 'media/')"/>
             </xsl:when>
             <xsl:when test="$img_rid != ''">
                 <!-- Dereference the reference ID field to get the file name, and map to the src attribute -->

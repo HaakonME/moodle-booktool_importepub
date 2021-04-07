@@ -29,6 +29,8 @@ require_once(__DIR__.'/import_form.php');
 $id = required_param('id', PARAM_INT); // Course Module ID.
 $action = optional_param('action', 'import', PARAM_TEXT);  // Import or export.
 $chapterid = optional_param('chapterid', 0, PARAM_INT); // Chapter ID.
+$verbose = optional_param('verbose', false, PARAM_BOOL); // Chapter ID.
+$imageformat = optional_param('imageformat', 'embedded', PARAM_TEXT); // Chapter ID.
 
 // Security checks.
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'book');
@@ -56,7 +58,7 @@ if ($mform->is_cancelled()) {
     }
 } else if ($action == 'export') {
     // Export the book into a Word file.
-    $booktext = booktool_wordimport_export($book, $context, $chapterid);
+    $booktext = booktool_wordimport_export($book, $context, $chapterid, $imageformat);
     $filename = clean_filename($book->name) . '.doc';
     send_file($booktext, $filename, 10, 0, true, array('filename' => $filename));
     die;
@@ -84,7 +86,7 @@ if ($mform->is_cancelled()) {
     }
 
     // Convert the Word file content and import it into the book.
-    booktool_wordimport_import($tmpfilename, $book, $context, $splitonsubheadings);
+    booktool_wordimport_import($tmpfilename, $book, $context, $splitonsubheadings, $verbose);
 
     echo $OUTPUT->continue_button(new moodle_url('/mod/book/view.php', array('id' => $id)));
     echo $OUTPUT->footer();

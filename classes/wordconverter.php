@@ -27,6 +27,7 @@ namespace booktool_wordimport;
 defined('MOODLE_INTERNAL') || die();
 
 use moodle_exception;
+use ZipArchive;
 require_once(__DIR__.'/xslemulatexslt.php');
 require_once($CFG->dirroot.'/mod/book/tool/importhtml/locallib.php');
 
@@ -56,8 +57,8 @@ class wordconverter {
     /* @var string How should images be handled: embedded as Base64-encoded data, or referenced (default). */
     private $imagehandling = 'referenced';
 
-    /* @var int Word heading style level to HTML element mapping, default "Heading 1" = <h3> */
-    private $heading1styleoffset = 3;
+    /* @var int Word heading style level to HTML element mapping, default "Heading 1" = <h1> */
+    private $heading1styleoffset = 1;
 
     /**
      * Process XML using XSLT script
@@ -146,7 +147,7 @@ class wordconverter {
             $zefilesize = zip_entry_filesize($zipentry);
 
             // Insert internal images into the array of images.
-            if (strpos($zefilename, "media")) {
+            if (!(strpos($zefilename, "media") === false)) {
                 $imagedata = zip_entry_read($zipentry, $zefilesize);
                 $imagename = basename($zefilename);
                 $imagesuffix = strtolower(pathinfo($zefilename, PATHINFO_EXTENSION));
@@ -222,6 +223,7 @@ class wordconverter {
         $xsltoutput = str_replace("</em><em>", "", $xsltoutput);
         $xsltoutput = str_replace("</u><u>", "", $xsltoutput);
 
+        $this->debug_unlink($filename);
         return $xsltoutput;
     }   // End import function.
 
@@ -284,6 +286,131 @@ class wordconverter {
 
         return $xsltoutput;
     }   // End export function.
+
+    /**
+     * Split HTML into multiple sections based on headings
+     *
+     * The HTML content must have been created by mapping Heading 1 styles in Word into h1 elements in the HTML.
+     *
+     * @param string $htmlcontent HTML from a single Word file
+     * @param ZipArchive $zipfile Zip file to insert HTML sections into
+     * @param bool $splitonsubheadings Split on h2 as well as h1
+     * @param bool $verbose Display extra progress messages
+     * @return void
+     */
+    public function split(string $htmlcontent, ZipArchive $zipfile, bool $splitonsubheadings, bool $verbose = false) {
+
+        // Split the single HTML file into multiple chapters based on h1 elements.
+        $h1matches = null;
+        $chaptermatches = null;
+        // Grab title and contents of each 'Heading 1' section, which is mapped to h1.
+        $chaptermatches = preg_split('#<h1>.*</h1>#isU', $htmlcontent);
+        preg_match_all('#<h1>(.*)</h1>#i', $htmlcontent, $h1matches);
+        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": n chapters = " . count($chaptermatches), DEBUG_WORDIMPORT);
+
+        // If no h1 elements are present, treat the whole file as a single chapter.
+        if (count($chaptermatches) == 1) {
+            $zipfile->addFromString("index.htm", $htmlcontent);
+        }
+
+        // Create a separate HTML file in the Zip file for each section of content.
+        for ($i = 1; $i < count($chaptermatches); $i++) {
+            // Remove any tags from heading, as it prevents proper import of the chapter title.
+            $chaptitle = strip_tags($h1matches[1][$i - 1]);
+            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chaptitle = " . $chaptitle, DEBUG_WORDIMPORT);
+            $chapcontent = $chaptermatches[$i];
+            $chapfilename = sprintf("index%02d.htm", $i);
+
+            // Remove the closing HTML markup from the last section.
+            if ($i == (count($chaptermatches) - 1)) {
+                $chapcontent = substr($chapcontent, 0, strpos($chapcontent, "</div></body>"));
+            }
+
+            if ($splitonsubheadings) {
+                // Save each subsection as a separate HTML file with a '_sub.htm' suffix.
+                $h2matches = null;
+                $subchaptermatches = null;
+                // Grab title and contents of each subsection.
+                preg_match_all('#<h2>(.*)</h2>#i', $chapcontent, $h2matches);
+                $subchaptermatches = preg_split('#<h2>.*</h2>#isU', $chapcontent);
+
+                // First save the initial chapter content.
+                $chapcontent = $subchaptermatches[0];
+                $chapfilename = sprintf("index%02d_00.htm", $i);
+                $htmlfilecontent = "<html><head><title>{$chaptitle}</title></head>" .
+                    "<body>{$chapcontent}</body></html>";
+                $zipfile->addFromString($chapfilename, $htmlfilecontent);
+
+                // Save each subsection to a separate file.
+                for ($j = 1; $j < count($subchaptermatches); $j++) {
+                    $subchaptitle = strip_tags($h2matches[1][$j - 1]);
+                    $subchapcontent = $subchaptermatches[$j];
+                    $subsectionfilename = sprintf("index%02d_%02d_sub.htm", $i, $j);
+                    $htmlfilecontent = "<html><head><title>{$subchaptitle}</title></head>" .
+                        "<body>{$subchapcontent}</body></html>";
+                    $zipfile->addFromString($subsectionfilename, $htmlfilecontent);
+                }
+            } else {
+                // Save each section as a HTML file.
+                $htmlfilecontent = "<html><head><title>{$chaptitle}</title></head>" .
+                    "<body>{$chapcontent}</body></html>";
+                $zipfile->addFromString($chapfilename, $htmlfilecontent);
+            }
+        }
+        $zipfile->close();
+    }
+
+    /**
+     * Store the Zip file in the temporary file storage area
+     *
+     * @param string $zipfilename Name of temporary Zip file
+     * @param ZipArchive $zipfile Zip file to insert HTML sections into
+     * @param context_module $context
+     * @return file_info Stored Zip file information
+     */
+    public function store(string $zipfilename, ZipArchive $zipfile, \context_module $context) {
+
+        // Create a record for the file store.
+        $fs = get_file_storage();
+        $zipfilerecord = array(
+            'contextid' => $context->id,
+            'component' => 'user',
+            'filearea' => 'draft',
+            'itemid' => 0,
+            'filepath' => "/",
+            'filename' => basename($zipfilename)
+            );
+        // Copy the temporary Zip file into the store, and then delete it.
+        $zipfile = $fs->create_file_from_pathname($zipfilerecord, $zipfilename);
+        $this->debug_unlink($zipfilename);
+        return $zipfile;
+    }
+
+    /**
+     * Store images in a Zip file
+     *
+     * @param string $zipfilename Name and location of Zip file to create
+     * @param array $images Array of image data
+     * @return \ZipArchive Stored Zip file information
+     */
+    public function zipimages(string $zipfilename, array $images) {
+        global $CFG;
+
+        // Create a temporary Zip file.
+        $zipfile = new \ZipArchive();
+        if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
+            // Cannot open zip file.
+            throw new \moodle_exception('cannotopenzip', 'error');
+        }
+
+        // Add any images to the Zip file.
+        if (count($images) > 0) {
+            foreach ($images as $imagename => $imagedata) {
+                $zipfile->addFromString($imagename, $imagedata);
+            }
+        }
+        return $zipfile;
+    }
 
     /**
      * Get images and write them as base64 inside the HTML content

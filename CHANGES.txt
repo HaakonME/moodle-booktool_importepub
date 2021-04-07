@@ -1,7 +1,8 @@
 # Change log
 
 Date          Version   Comment
-2021/04/05    1.4.4     Improve support for Lesson import plugin.
+2021/04/07    1.4.5     Fix import of images in Word 2020 files.
+2021/04/06    1.4.4     Improve support for Lesson import plugin.
 2021/04/05    1.4.3     Fix coding error and PHPDocs warnings.
 2021/04/05    1.4.2     Add support for Lesson import/export from and to Word files.
 2021/04/03    1.4.1     Export to Word 2020/365 compatible format to support embedded images.
