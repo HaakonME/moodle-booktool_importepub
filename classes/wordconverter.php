@@ -540,7 +540,7 @@ class wordconverter {
             foreach ($grouparray as $stringid) {
                 $namestring = $typegroup . '_' . $stringid;
                 // Clean up question type explanation, in case the default text has been overridden on the site.
-                $cleantext = get_string($stringid, $typegroup);
+                $cleantext = $this->convert_to_xml(get_string($stringid, $typegroup));
                 $expout .= '<data name="' . $namestring . '"><value>' . $cleantext . "</value></data>\n";
             }
         }
@@ -556,7 +556,7 @@ class wordconverter {
      * @param string $cdatastring XHTML from inside a CDATA_SECTION in a question text element
      * @return string
      */
-    private function clean_html_text(string $cdatastring) {
+    public function clean_html_text(string $cdatastring) {
 
         // Escape double minuses, which cause XSLT processing to fail.
         $cdatastring = str_replace("--", "WORDIMPORTMinusMinus", $cdatastring);
@@ -594,6 +594,38 @@ class wordconverter {
 
         // Strip soft hyphens (0xAD, or decimal 173).
         $cleanxhtml = preg_replace('/\xad/u', '', $cleanxhtml);
+
+        return $cleanxhtml;
+    }
+
+    /**
+     * Convert content into well-formed XML
+     *
+     * A string containing clean XHTML is returned
+     *
+     * @param string $cdatastring XHTML from questions or help text
+     * @return string well-formed XML
+     */
+    public function convert_to_xml($cdatastring) {
+
+        // Escape double minuses, which cause XSLT processing to fail.
+        $cdatastring = str_replace("--", "WordTableMinusMinus", $cdatastring);
+
+        // Wrap the string in a HTML wrapper, load it into a new DOM document as HTML, but save as XML.
+        $doc = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><html><body>' . $cdatastring . '</body></html>');
+        $doc->getElementsByTagName('html')->item(0)->setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+        $xml = $doc->saveXML();
+
+        $bodystart = stripos($xml, '<body>') + strlen('<body>');
+        $bodylength = strripos($xml, '</body>') - $bodystart;
+
+        if ($bodystart || $bodylength) {
+            $cleanxhtml = substr($xml, $bodystart, $bodylength);
+        } else {
+            $cleanxhtml = $cdatastring;
+        }
 
         return $cleanxhtml;
     }
