@@ -54,9 +54,9 @@ function booktool_wordimport_import(string $wordfilename, stdClass $book, contex
     // Store images in a Zip file and split the HTML file into sections.
     // Add the sections to the Zip file and store it in Moodles' file storage area.
     $zipfilename = tempnam($CFG->tempdir, "zip");
-    $zipfile = $word2xml->zipimages($zipfilename, $imagesforzipping);
-    $word2xml->split($htmlcontent, $zipfile, $splitonsubheadings, $verbose);
-    $zipfile = $word2xml->store($zipfilename, $zipfile, $context);
+    $zipfile = $word2xml->zip_images($zipfilename, $imagesforzipping);
+    $word2xml->split_html($htmlcontent, $zipfile, $splitonsubheadings, $verbose);
+    $zipfile = $word2xml->store_html($zipfilename, $zipfile, $context);
     unlink($zipfilename);
 
     // Call the core HTML import function to really import the content.
