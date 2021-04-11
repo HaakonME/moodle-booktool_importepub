@@ -34,11 +34,9 @@ require_once($CFG->dirroot.'/mod/book/tool/importhtml/locallib.php');
 /**
  * Import HTML pages from a Word file
  *
- * @param string $wordfilename Word file
- * @param stdClass $book
- * @param context_module $context
- * @param bool $splitonsubheadings
- * @return void
+ * To import Word files, process a .docx Zip file, extracting the text and images, and convert it into XHTML.
+ * To export HTML pages to Word, wrap them in a standard template, and apply Words pre-defined class names to headings,
+ * paragraphs, lists, etc. For example, <h1> becomes <h1 class="MsoHeading1"> and <p> becomes <p class="MsoBodyText">.
  */
 class wordconverter {
 
@@ -106,9 +104,6 @@ class wordconverter {
             throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
         }
 
-        if (debugging(null, DEBUG_DEVELOPER)) {
-             // print_object($this->xsltparameters);
-        }
         // Run the XSLT script using the PHP xsl library.
         $xsltproc = xslt_create();
         if (!($xsltoutput = xslt_process($xsltproc, $tempxmlfilename, $xslfile, null, null, $this->xsltparameters))) {
@@ -121,6 +116,7 @@ class wordconverter {
         // Clean namespaces.
         $xsltoutput = $this->clean_namespaces($xsltoutput);
         $xsltoutput = $this->clean_mathml_namespaces($xsltoutput);
+        // if (false) { // Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
         if (debugging(null, DEBUG_DEVELOPER)) {
             if (!($tempxmlfilename = tempnam($CFG->tempdir, "xml")) || (file_put_contents($tempxmlfilename, $xsltoutput)) == 0) {
                 throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
@@ -287,7 +283,7 @@ class wordconverter {
                 "<htmltemplate>\n" . file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n" .
                 $moodlelabels . "</container>";
 
-        if (debugging(null, DEBUG_DEVELOPER)) {
+        if (false) { // Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
             if (!($tempxmlfilename = tempnam($CFG->tempdir, "xml")) || (file_put_contents($tempxmlfilename, $xhtmloutput)) == 0) {
                 throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
             }
@@ -320,7 +316,6 @@ class wordconverter {
         // Grab title and contents of each 'Heading 1' section, which is mapped to h3.
         $chaptermatches = preg_split('#<h3>.*</h3>#isU', $htmlcontent);
         preg_match_all('#<h3>(.*)</h3>#i', $htmlcontent, $h3matches);
-        // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": n chapters = " . count($chaptermatches), DEBUG_WORDIMPORT);
 
         // If no h3 elements are present, treat the whole file as a single chapter.
         if (count($chaptermatches) == 1) {
@@ -331,7 +326,6 @@ class wordconverter {
         for ($i = 1; $i < count($chaptermatches); $i++) {
             // Remove any tags from heading, as it prevents proper import of the chapter title.
             $chaptitle = strip_tags($h3matches[1][$i - 1]);
-            // @codingStandardsIgnoreLine debugging(__FUNCTION__ . ":" . __LINE__ . ": chaptitle = " . $chaptitle, DEBUG_WORDIMPORT);
             $chapcontent = $chaptermatches[$i];
             $chapfilename = sprintf("index%02d.htm", $i);
 
@@ -396,7 +390,6 @@ class wordconverter {
             );
         // Copy the temporary Zip file into the store, and then delete it.
         $zipfile = $fs->create_file_from_pathname($zipfilerecord, $zipfilename);
-        $this->debug_unlink($zipfilename);
         return $zipfile;
     }
 
@@ -679,7 +672,7 @@ class wordconverter {
      * @return void
      */
     private function debug_unlink($filename) {
-        if (!(debugging(null, DEBUG_DEVELOPER))) {
+        if (true) { // Not Parenthesis debugging(null, DEBUG_DEVELOPER) parenthesis.
             unlink($filename);
         }
     }
