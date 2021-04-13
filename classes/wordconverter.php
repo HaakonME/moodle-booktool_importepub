@@ -39,17 +39,16 @@ require_once($CFG->dirroot.'/mod/book/tool/importhtml/locallib.php');
  * paragraphs, lists, etc. For example, <h1> becomes <h1 class="MsoHeading1"> and <p> becomes <p class="MsoBodyText">.
  */
 class wordconverter {
-
-    /* @var string Stylesheet to convert WordML to XHTML */
+    /** @var string Stylesheet to convert WordML to XHTML */
     private $word2xmlstylesheet1 = __DIR__ . "/wordml2xhtmlpass1.xsl"; // Convert WordML into basic XHTML.
 
-    /* @var string Stylesheet to clean XHTML up and insert images as Base64-encoded data. */
+    /** @var string Stylesheet to clean XHTML up and insert images as Base64-encoded data. */
     private $word2xmlstylesheet2 = __DIR__ . "/wordml2xhtmlpass2.xsl"; // Refine basic XHTML into Word-compatible XHTML.
 
-    /* @var string XHTML template for exporting content, with Word-compatible CSS style definitions. */
+    /** @var string XHTML template for exporting content, with Word-compatible CSS style definitions. */
     private $wordfiletemplate = __DIR__ . '/wordfiletemplate.html';
 
-    /* @var string Stylesheet to export generic XHTML into Word-compatible XHTML. */
+    /** @var string Stylesheet to export generic XHTML into Word-compatible XHTML. */
     private $exportstylesheet = __DIR__ . "/xhtml2wordpass2.xsl";
 
     /**
@@ -57,7 +56,6 @@ class wordconverter {
      *
      * @param string $plugin Name of plugin
      */
-
     public function __construct(string $plugin = 'booktool_wordimport') {
         global $CFG, $USER, $COURSE;
 
@@ -86,6 +84,7 @@ class wordconverter {
      *
      * @param string $xmldata XML-formatted content
      * @param string $xslfile Full path to XSLT script file
+     * @param array $parameters Extra XSLT parameters, if any
      * @return string Processed XML content
      */
     public function convert(string $xmldata, string $xslfile, array $parameters = array()) {
@@ -116,7 +115,7 @@ class wordconverter {
         // Clean namespaces.
         $xsltoutput = $this->clean_namespaces($xsltoutput);
         $xsltoutput = $this->clean_mathml_namespaces($xsltoutput);
-        // if (false) { // Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
+        // If (false) Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
         if (debugging(null, DEBUG_DEVELOPER)) {
             if (!($tempxmlfilename = tempnam($CFG->tempdir, "xml")) || (file_put_contents($tempxmlfilename, $xsltoutput)) == 0) {
                 throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
@@ -212,9 +211,6 @@ class wordconverter {
                     case "word/_rels/footnotes.xml.rels":
                         $wordmldata .= "<footnoteLinks>" . $xmlfiledata . "</footnoteLinks>\n";
                         break;
-                    // @codingStandardsIgnoreLine case "word/_rels/settings.xml.rels":
-                        // @codingStandardsIgnoreLine $wordmldata .= "<settingsLinks>" . $xmlfiledata . "</settingsLinks>\n";
-                        // @codingStandardsIgnoreLine break;
                 }
             }
             // Get the next file in the Zip package.
@@ -253,7 +249,8 @@ class wordconverter {
      * @param string $imagehandling Embedded or encoded image data
      * @return string Word-compatible XHTML text
      */
-    public function export(string $xhtmldata, string $module = 'booktool_wordimport', string $moodlelabels, string $imagehandling = 'embedded') {
+    public function export(string $xhtmldata, string $module = 'booktool_wordimport', string $moodlelabels,
+        string $imagehandling = 'embedded') {
         global $CFG, $USER, $COURSE, $OUTPUT;
 
         // Check the HTML template exists.
