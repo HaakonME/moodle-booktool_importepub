@@ -3680,7 +3680,7 @@
         <xsl:variable name="after" select="count($meInContext/following-sibling::*[descendant-or-self::*[name()='w:tc' and (count(ancestor::w:tbl)=$tblCount)]])" />
 
         <xsl:if test="not($vmerge and not($vmerge/@w:val))">
-            <xsl:value-of select="$debug_newline"/>
+            <!-- <xsl:value-of select="$debug_newline"/> -->
             <xsl:element name="{$table_celltype}">
 
         <xsl:if test="$sTblStyleName/@w:styleId != ''">

@@ -671,7 +671,7 @@
 
     <!-- Convert table body cells containing headings into th's -->
     <xsl:template match="x:td[contains(x:p[1]/@class, 'tablerowhead')]">
-        <xsl:value-of select="$debug_newline"/>
+        <!-- <xsl:value-of select="$debug_newline"/> -->
         <th>
             <xsl:apply-templates/>
         </th>
@@ -724,7 +724,7 @@
 
         <!-- Process this paragraph if it has the same class as the last one -->
         <xsl:if test="starts-with(@class, $paraClass)">
-            <xsl:value-of select="$debug_newline"/>
+            <!-- <xsl:value-of select="$debug_newline"/> -->
             <p>
                 <xsl:for-each select="@*">
                     <xsl:if test="name() != 'class'">

@@ -404,7 +404,7 @@
 </xsl:template>
 
 <!-- Table column headings -->
-<xsl:template match="htm:th|htm:td[ancestor::htm:thead]">
+<xsl:template match="htm:th[ancestor::htm:thead]">
     <xsl:value-of select="'&#x0a;'"/>
     <th>
         <xsl:call-template name="copyAttributes"/>
