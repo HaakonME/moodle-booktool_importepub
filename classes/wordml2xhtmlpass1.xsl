@@ -2470,9 +2470,21 @@
             </xsl:if>
         </xsl:variable>
         <xsl:choose>
-            <xsl:when test="$rStyleId='' and $styleMod=''">
-                <xsl:call-template name="DisplayRContent"/>
 
+            <xsl:when test="$rStyleId='' and $styleMod=''">
+                <!-- Handle language changes -->
+                <xsl:choose>
+                    <xsl:when test="w:rPr/w:lang/@w:val != ''">
+                        <span>
+                            <xsl:attribute name="lang"><xsl:value-of select="substring-before(w:rPr/w:lang/@w:val, '-')"/></xsl:attribute>
+                            <xsl:attribute name="class">multilang</xsl:attribute>
+                            <xsl:call-template name="DisplayRContent"/>
+                        </span>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:call-template name="DisplayRContent"/>
+                    </xsl:otherwise>
+                </xsl:choose>
                 <xsl:if test="$pr.listSuff = $prListSuff_space"><xsl:text> </xsl:text></xsl:if>
             </xsl:when>
             <xsl:otherwise>
@@ -2486,6 +2498,11 @@
                         <xsl:attribute name="style"><xsl:value-of select="$styleMod"/></xsl:attribute>
                 </xsl:if>
 
+                <!-- Handle language changes -->
+                <xsl:if test="w:rPr/w:lang/@w:val != ''">
+                        <xsl:attribute name="lang"><xsl:value-of select="substring-before(w:rPr/w:lang/@w:val, '-')"/></xsl:attribute>
+                        <xsl:attribute name="class">multilang</xsl:attribute>
+                </xsl:if>
 
 
                                 <xsl:choose>

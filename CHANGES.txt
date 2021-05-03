@@ -1,6 +1,7 @@
 # Change log
 
 Date          Version   Comment
+2021/05/03    1.4.8     Support language markup in text.
 2021/05/02    1.4.7     Don't impose heading cells in table head on export.
 2021/04/10    1.4.6     Add support for Question bank import/export.
 2021/04/07    1.4.5     Fix import of images in Word 2020 files.
