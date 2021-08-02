@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Privacy information for administration tool upload enrolment methods- no user data stored.
+ * Privacy information for book tool Word import - no user data stored.
  *
  * @package     booktool_wordimport
  * @copyright   2018 Eoin Campbell
