@@ -2477,7 +2477,7 @@
                     <xsl:when test="w:rPr/w:lang/@w:val != ''">
                         <span>
                             <xsl:attribute name="lang"><xsl:value-of select="substring-before(w:rPr/w:lang/@w:val, '-')"/></xsl:attribute>
-                            <xsl:attribute name="class">multilang</xsl:attribute>
+                            <!-- <xsl:attribute name="class">multilang</xsl:attribute> -->
                             <xsl:call-template name="DisplayRContent"/>
                         </span>
                     </xsl:when>
@@ -2501,7 +2501,7 @@
                 <!-- Handle language changes -->
                 <xsl:if test="w:rPr/w:lang/@w:val != ''">
                         <xsl:attribute name="lang"><xsl:value-of select="substring-before(w:rPr/w:lang/@w:val, '-')"/></xsl:attribute>
-                        <xsl:attribute name="class">multilang</xsl:attribute>
+                        <!-- <xsl:attribute name="class">multilang</xsl:attribute> -->
                 </xsl:if>
 
 
@@ -4816,12 +4816,24 @@
             </xsl:choose>
         </xsl:variable>
 
+        <!-- Get the image name without any 'media/' prefix, if present -->
+        <xsl:variable name="img_basefilename">
+            <xsl:choose>
+                <xsl:when test="contains($img_filename, 'media/')">
+                    <xsl:value-of select="substring-after($img_filename, '/')"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="$img_filename"/>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+
         <!-- Handle case where image might be hyperlinked -->
         <xsl:choose>
         <xsl:when test="$img_hyperlink != ''">
             <!-- The image is linked -->
             <a href="{$img_hyperlink}">
-                <img src="{$img_src}" id="{$img_id}" alt="{$img_alt}" longdesc="{$img_longdesc}">
+                <img src="{$img_src}" id="{$img_id}" name="{$img_basefilename}" alt="{$img_alt}" longdesc="{$img_longdesc}">
                     <xsl:if test="$img_width != ''">
                         <xsl:attribute name="width">
                             <xsl:value-of select="$img_width"/>
@@ -4835,7 +4847,7 @@
         </xsl:when>
         <xsl:otherwise>
             <!-- The image is not linked -->
-            <img src="{$img_src}" id="{$img_id}" alt="{$img_alt}" longdesc="{$img_longdesc}">
+            <img src="{$img_src}" id="{$img_id}" name="{$img_basefilename}" alt="{$img_alt}" longdesc="{$img_longdesc}">
                 <xsl:if test="$img_width != ''">
                     <xsl:attribute name="width">
                         <xsl:value-of select="$img_width"/>
