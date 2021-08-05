@@ -221,12 +221,27 @@ class wordconverter {
         // Add Base64 images section and close the merged XML file.
         $wordmldata .= "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n";
         $wordmldata .= "</pass1Container>";
+        if (debugging(null, DEBUG_DEVELOPER)) { // Save for debugging.
+            if (!($tempxmlfilename = tempnam($CFG->tempdir, "wml")) || (file_put_contents($tempxmlfilename, $wordmldata)) == 0) {
+                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
+            }
+        }
 
         // Pass 1 - convert WordML into linear XHTML.
         $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1);
+        if (debugging(null, DEBUG_DEVELOPER)) { // Save for debugging.
+            if (!($tempxmlfilename = tempnam($CFG->tempdir, "p1x")) || (file_put_contents($tempxmlfilename, $xsltoutput)) == 0) {
+                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
+            }
+        }
 
         // Pass 2 - tidy up linear XHTML.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2);
+        if (debugging(null, DEBUG_DEVELOPER)) { // Save for debugging.
+            if (!($tempxmlfilename = tempnam($CFG->tempdir, "p2x")) || (file_put_contents($tempxmlfilename, $xsltoutput)) == 0) {
+                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
+            }
+        }
 
         // Remove extra superfluous markup included in the Word to XHTML conversion.
         $xsltoutput = str_replace("</strong><strong>", "", $xsltoutput);
@@ -280,7 +295,7 @@ class wordconverter {
                 "<htmltemplate>\n" . file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n" .
                 $moodlelabels . "</container>";
 
-        if (false) { // Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
+        if (true) { // Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
             if (!($tempxmlfilename = tempnam($CFG->tempdir, "xml")) || (file_put_contents($tempxmlfilename, $xhtmloutput)) == 0) {
                 throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
             }
@@ -428,6 +443,7 @@ class wordconverter {
      * @return string the modified HTML with embedded images
      */
     public function base64_images(string $contextid, string $component, string $filearea, $chapterid = null) {
+        global $CFG;
         // Get the list of files embedded in the book or chapter.
         // Note that this will break on images in the Book Intro section.
         $imagestring = '';
@@ -446,9 +462,21 @@ class wordconverter {
                 $fileitemid = $fileinfo->get_itemid();
                 $filepath = $fileinfo->get_filepath();
                 $filedata = $fs->get_file($contextid, $component, $filearea, $fileitemid, $filepath, $filename);
-
+                $imagedata = $filedata->get_content();
                 if (!$filedata === false) {
-                    $base64data = base64_encode($filedata->get_content());
+                    // Convert GIF images to PNG for Word compatibility.
+                    if ($fileext == 'gif') {
+                        $filetype = 'png';
+                        $giffile = tempnam($CFG->tempdir, "gif");
+                        $pngfile = tempnam($CFG->tempdir, "png");
+                        file_put_contents($giffile, $imagedata);
+                        if (imagepng(imagecreatefromgif($giffile), $pngfile)) {
+                            $imagedata = file_get_contents($pngfile);
+                        }
+                        unlink($giffile);
+                        unlink($pngfile);
+                    }
+                    $base64data = base64_encode($imagedata);
                     $filedata = 'data:image/' . $filetype . ';base64,' . $base64data;
                     // Embed the image name and data into the HTML.
                     $imagestring .= '<img title="' . $filename . '" src="' . $filedata . '"/>';

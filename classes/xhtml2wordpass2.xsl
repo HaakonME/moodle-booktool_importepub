@@ -600,51 +600,22 @@
 
 <!-- Handle the img element within the main component text by replacing it with a bookmark as a placeholder -->
 <xsl:template match="htm:img" priority="2">
-    <xsl:variable name="chapid">
-        <xsl:choose>
-        <xsl:when test="ancestor::htm:div[@class = 'chapter']/@id != ''">
-            <xsl:number value="ancestor::htm:div[@class = 'chapter']/@id" format="00001"/>
-        </xsl:when>
-        <xsl:otherwise>
-            <xsl:text>00001</xsl:text>
-        </xsl:otherwise>
-        </xsl:choose>
-    </xsl:variable>
-    <xsl:variable name="imgnum">
-        <xsl:choose>
-        <xsl:when test="@id and @id != ''">
-            <xsl:value-of select="@id"/>
-        </xsl:when>
-        <xsl:otherwise>
-            <xsl:number value="count(preceding::htm:img) + 1" format="0001"/>
-        </xsl:otherwise>
-        </xsl:choose>
-    </xsl:variable>
-
-    <xsl:variable name="bookmark_name" select="concat('MQIMAGE_Q', $chapid, '_IID', $imgnum)"/>
-
     <xsl:choose>
-    <xsl:when test="contains(@src, $embeddedimagedata_string)">
-        <!-- Pasted images are base64-encoded into the @src attribute -->
-        <img>
-            <xsl:call-template name="copyAttributes"/>
-        </img>
-    </xsl:when>
-    <xsl:when test="contains(@src, $pluginfiles_string)">
-        <!-- Referenced images must be embedded as base64 data for Word 2020. -->
-        <!-- Get the image data from the table passed in-->
-        <xsl:variable name="image_id" select="substring-after(@src, $pluginfiles_string)"/>
-        <xsl:variable name="imagedata" select="ancestor::htm:div[@class = 'chapter']/htm:div[@class='ImageFile']/htm:img[@title = $image_id]/@src"/>
+        <xsl:when test="contains(@src, $pluginfiles_string)">
+            <!-- Referenced images must be embedded as base64 data for Word 2020. -->
+            <!-- Get the image data from the table passed in-->
+            <xsl:variable name="image_id" select="substring-after(@src, $pluginfiles_string)"/>
+            <xsl:variable name="imagedata" select="ancestor::htm:div[@class = 'chapter']/htm:div[@class='ImageFile']/htm:img[@title = $image_id]/@src"/>
 
-        <img src="{$imagedata}">
-            <xsl:call-template name="copyImgAttributes"/>
-        </img>
-    </xsl:when>
-    <xsl:otherwise>
-        <img>
-            <xsl:call-template name="copyAttributes"/>
-        </img>
-    </xsl:otherwise>
+            <img src="{$imagedata}">
+                <xsl:call-template name="copyImgAttributes"/>
+            </img>
+        </xsl:when>
+        <xsl:otherwise>
+            <img>
+                <xsl:call-template name="copyAttributes"/>
+            </img>
+        </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
 
