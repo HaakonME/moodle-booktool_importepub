@@ -37,9 +37,8 @@ list ($course, $cm) = get_course_and_cm_from_cmid($id, 'book');
 $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
 require_course_login($course, true, $cm);
 
-// Should update capabilities to separate import and export permissions.
+// Import or export allowed only if user has editing rights.
 $context = context_module::instance($cm->id);
-require_capability('booktool/wordimport:import', $context);
 require_capability('mod/book:edit', $context);
 
 // Set up page in case an import has been requested.

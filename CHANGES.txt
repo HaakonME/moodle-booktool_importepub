@@ -1,7 +1,7 @@
 # Change log
 
 Date          Version   Comment
-2021/08/05    1.4.10    Suport import of Word questions, export of GIF images into Word.
+2021/08/12    1.4.10    Suport import of Word questions, convert GIF images, manage access to import/export facilities.
 2021/07/14    1.4.9     Strip out unwanted markup inside Word document XML file.
 2021/05/03    1.4.8     Support language markup in text.
 2021/05/02    1.4.7     Don't impose heading cells in table head on export.

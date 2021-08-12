@@ -54,7 +54,7 @@ class wordconverter {
     /**
      * Class constructor
      *
-     * @param string $plugin Name of plugin
+     * @param string $plugin Name of plugin module
      */
     public function __construct(string $plugin = 'booktool_wordimport') {
         global $CFG, $USER, $COURSE;
@@ -115,12 +115,7 @@ class wordconverter {
         // Clean namespaces.
         $xsltoutput = $this->clean_namespaces($xsltoutput);
         $xsltoutput = $this->clean_mathml_namespaces($xsltoutput);
-        // If (false) Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
-        if (debugging(null, DEBUG_DEVELOPER)) {
-            if (!($tempxmlfilename = tempnam($CFG->tempdir, "xml")) || (file_put_contents($tempxmlfilename, $xsltoutput)) == 0) {
-                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
-            }
-        }
+        $this->debug_write($xsltoutput, "xml");
         return $xsltoutput;
     }
 
@@ -156,6 +151,8 @@ class wordconverter {
         $xmldeclaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $wordmldata = $xmldeclaration . "\n<pass1Container>\n";
         $imagestring = "";
+        $gifimagefilenames = array();
+        $pngimagefilenames = array();
 
         $zipentry = zip_read($zipres);
         while ($zipentry) {
@@ -175,15 +172,22 @@ class wordconverter {
                 $imagesuffix = strtolower(pathinfo($zefilename, PATHINFO_EXTENSION));
                 if ($imagesuffix == 'jpg') {
                     $imagesuffix = "jpeg";
-                } else if ($imagesuffix == 'wmf') {
-                    $imagesuffix = "x-wmf";
+                } else if ($imagesuffix == "gif" && ($this->xsltparameters['pluginname'] == 'qformat_wordtable' ||
+                                $this->xsltparameters['pluginname'] == 'local_glossary_wordimport')) {
+                    // For Glossaries and Questions, convert GIF images to PNG on import, not on export.
+                    // This is because it is too hard to identify them in PHP when exporting.
+                    list ($pngfilename, $imagedata) = $this->giftopng($imagedata);
+                    // Map old GIF image name to a new PNG name, derived from the temporary PNG file name.
+                    $pngimagefilenames[] = basename($imagename, '.gif') . $pngfilename;
+                    $gifimagefilenames[] = $imagename;
                 }
+
                 // Internet formats like GIF, PNG and JPEG are supported, but not non-Internet formats like BMP or EPS.
-                if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpeg' or $imagesuffix == 'x-wmf') {
+                if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpeg') {
                     $imagesforzipping[$imagename] = $imagedata;
                     $imagemimetype = "image/" . $imagesuffix;
-                    $imagestring .= '<file filename="media/' . $imagename . '" mime-type="' . $imagemimetype . '">';
-                    $imagestring .= base64_encode($imagedata) . "</file>\n";
+                    $imagestring .= '<file filename="media/' . $imagename . '" mime-type="' . $imagemimetype . '">'
+                        . base64_encode($imagedata) . "</file>\n";
                 }
             } else {
                 // Look for required XML files, read and wrap it, remove the XML declaration, and add it to the XML string.
@@ -203,7 +207,7 @@ class wordconverter {
                         $wordmldata .= "<styleMap>" . $xmlfiledata . "</styleMap>\n";
                         break;
                     case "word/_rels/document.xml.rels":
-                        $wordmldata .= "<documentLinks>" . $xmlfiledata . "</documentLinks>\n";
+                        $documentlinks = "<documentLinks>" . $xmlfiledata . "</documentLinks>\n";
                         break;
                     case "word/footnotes.xml":
                         $wordmldata .= "<footnotesContainer>" . $xmlfiledata . "</footnotesContainer>\n";
@@ -218,30 +222,26 @@ class wordconverter {
         }  // End while loop.
         zip_close($zipres);
 
-        // Add Base64 images section and close the merged XML file.
-        $wordmldata .= "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n";
-        $wordmldata .= "</pass1Container>";
-        if (debugging(null, DEBUG_DEVELOPER)) { // Save for debugging.
-            if (!($tempxmlfilename = tempnam($CFG->tempdir, "wml")) || (file_put_contents($tempxmlfilename, $wordmldata)) == 0) {
-                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
-            }
+        // Preprocess the document links and images to rename any re-formatted GIF images to be PNGs instead.
+        // Fixing filenames in the document links is the simplest solution for this issue.
+        if (count($gifimagefilenames) > 0) {
+            $documentlinks = str_replace($gifimagefilenames, $pngimagefilenames, $documentlinks);
+            $imagestring = str_replace($gifimagefilenames, $pngimagefilenames, $imagestring);
+            $imagestring = str_replace("image/gif", "image/png", $imagestring);
         }
+
+        // Add Base64 images section and close the merged XML file.
+        $wordmldata .= $documentlinks . "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n";
+        $wordmldata .= "</pass1Container>";
+        $this->debug_write($wordmldata, "wml");
 
         // Pass 1 - convert WordML into linear XHTML.
         $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1);
-        if (debugging(null, DEBUG_DEVELOPER)) { // Save for debugging.
-            if (!($tempxmlfilename = tempnam($CFG->tempdir, "p1x")) || (file_put_contents($tempxmlfilename, $xsltoutput)) == 0) {
-                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
-            }
-        }
+        $this->debug_write($xsltoutput, "p1x");
 
         // Pass 2 - tidy up linear XHTML.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2);
-        if (debugging(null, DEBUG_DEVELOPER)) { // Save for debugging.
-            if (!($tempxmlfilename = tempnam($CFG->tempdir, "p2x")) || (file_put_contents($tempxmlfilename, $xsltoutput)) == 0) {
-                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
-            }
-        }
+        $this->debug_write($xsltoutput, "p2x");
 
         // Remove extra superfluous markup included in the Word to XHTML conversion.
         $xsltoutput = str_replace("</strong><strong>", "", $xsltoutput);
@@ -294,12 +294,7 @@ class wordconverter {
                 $cleancontent . "</body></html></container>\n" .
                 "<htmltemplate>\n" . file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n" .
                 $moodlelabels . "</container>";
-
-        if (true) { // Parenthesis debugging(null, DEBUG_DEVELOPER)Parenthesis.
-            if (!($tempxmlfilename = tempnam($CFG->tempdir, "xml")) || (file_put_contents($tempxmlfilename, $xhtmloutput)) == 0) {
-                throw new \moodle_exception(get_string('cannotopentempfile', 'booktool_wordimport', $tempxmlfilename));
-            }
-        }
+        $this->debug_write($xhtmloutput, "xml");
 
         // Do Pass 2 XSLT transformation (Pass 1 must be done in separate convert() call if necessary).
         $xsltoutput = $this->convert($xhtmloutput, $this->exportstylesheet, $parameters);
@@ -432,9 +427,10 @@ class wordconverter {
     }
 
     /**
-     * Get images and write them as base64 inside the HTML content
+     * Get images and write them as base64 inside the HTML content for Word export
      *
-     * A string containing the HTML with embedded base64 images is returned
+     * A string containing the HTML with embedded base64 images is returned.
+     * If the images are in GIF format, convert them to PNG for Word compatibility.
      *
      * @param string $contextid the context ID
      * @param string $component File component: book, question, glossary, lesson
@@ -466,15 +462,10 @@ class wordconverter {
                 if (!$filedata === false) {
                     // Convert GIF images to PNG for Word compatibility.
                     if ($fileext == 'gif') {
+                        list ($pngfilename, $imagedata) = $this->giftopng($imagedata);
                         $filetype = 'png';
-                        $giffile = tempnam($CFG->tempdir, "gif");
-                        $pngfile = tempnam($CFG->tempdir, "png");
-                        file_put_contents($giffile, $imagedata);
-                        if (imagepng(imagecreatefromgif($giffile), $pngfile)) {
-                            $imagedata = file_get_contents($pngfile);
-                        }
-                        unlink($giffile);
-                        unlink($pngfile);
+                        // Change image1.gif to image1XXX.png", where XXX is taken from the temporary PNG file name.
+                        $filename = basename($filename, '.gif') . "-" . $pngfilename;
                     }
                     $base64data = base64_encode($imagedata);
                     $filedata = 'data:image/' . $filetype . ';base64,' . $base64data;
@@ -488,6 +479,35 @@ class wordconverter {
             return '<div class="ImageFile">' . $imagestring . '</div>';
         }
         return '';
+    }
+
+    /**
+     * Convert a GIF image to PNG format for Word compatibility
+     *
+     * A string containing the PNG instead of GIF image data is returned
+     *
+     * @param string $imagedata
+     * @return array containing the temporary PNG file name and the PNG image data
+     */
+    private function giftopng(string $imagedata) {
+        global $CFG;
+
+        $giffile = tempnam($CFG->tempdir, "gif");
+        $pngfile = tempnam($CFG->tempdir, "png");
+        file_put_contents($giffile, $imagedata);
+        if ((imagepng(imagecreatefromgif($giffile), $pngfile)) === true) {
+            $imagedata = file_get_contents($pngfile);
+        } else { // Use invalid.png if the image function failed.
+            $imagedata = base64_decode("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAMFBMVEUAAAD/QDz/QDz/QDz/QDz/QDz/" .
+                "QDz/QDz/QDz/QDz/QDz/QDz/QDz/QDz/QDz/QDxu8djTAAAAD3RSTlMAECAwQFBgcICPn6+/z+/qVnWSAAAAcklEQVQIHQXBzQ3BAAA" .
+                "G0Nf4KeLQBawgFpDYgBG6QTuCARyMYAMjcHQVA0gs4CI9ED7vUbSUFWZvjleKe7ajfCuDZ7omvw3LJLmhOCbvCsbJHpRJC+bJA5y65g" .
+                "P91MOsMO1ozljXDF+4wI7eASYLfWD1B++9KixJ5BTzAAAAAElFTkSuQmCC");
+        }
+        $this->debug_unlink($giffile);
+        $this->debug_unlink($pngfile);
+        // Change "pngXXXX.tmp" into "XXXX.png" for appending to the original GIF file name.
+        $pngfilename = substr(basename($pngfile, ".tmp"), 3) . ".png";
+        return array($pngfilename, $imagedata);
     }
 
     /**
@@ -691,13 +711,27 @@ class wordconverter {
     }
 
     /**
+     * Write contents to a file for debugging purposes
+     *
+     * @param string $content text to save
+     * @param string $prefix file prefix
+     * @return void
+     */
+    public function debug_write(string $content, string $prefix) {
+        if (debugging(null, DEBUG_DEVELOPER)) {
+            $tempxmlfilename = tempnam($CFG->tempdir, $prefix);
+            file_put_contents($tempxmlfilename, $content);
+        }
+    }
+
+    /**
      * Delete temporary files if debugging disabled
      *
      * @param string $filename name of file to be deleted
      * @return void
      */
-    private function debug_unlink($filename) {
-        if (true) { // Not Parenthesis debugging(null, DEBUG_DEVELOPER) parenthesis.
+    public function debug_unlink($filename) {
+        if (!debugging(null, DEBUG_DEVELOPER)) { // Not Parenthesis debugging(null, DEBUG_DEVELOPER) parenthesis.
             unlink($filename);
         }
     }
