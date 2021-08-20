@@ -83,10 +83,15 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
         $allchapters = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum');
         // Read the title and introduction into a string, embedding images.
         $booktext .= '<p class="MsoTitle">' . $book->name . "</p>\n";
-        $booktext .= '<div class="chapter" id="intro">' . $book->intro;
-        // This is probably wrong.
-        $booktext .= $word2xml->base64_images($context->id, 'mod_book', 'intro');
-        $booktext .= "</div>\n";
+        // Grab the images, convert any GIFs to PNG, and return the list of converted images.
+        $giffilenames = array();
+        $imagestring = $word2xml->base64_images($context->id, 'mod_book', 'intro', null, $giffilenames);
+
+        $introcontent = $book->intro;
+        if (count($giffilenames) > 0) {
+            $introcontent = str_replace($giffilenames['gif'], $giffilenames['png'], $introcontent);
+        }
+        $booktext .= '<div class="chapter" id="intro">' . $introcontent . $imagestring . "</div>\n";
     } else {
         $allchapters[0] = $DB->get_record('book_chapters', array('bookid' => $book->id, 'id' => $chapterid), '*', MUST_EXIST);
     }
@@ -102,15 +107,23 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
             } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
                 $booktext .= "<h2>" . $chapter->title . "</h2>\n";
             }
-            $booktext .= $chapter->content;
-            $booktext .= $word2xml->base64_images($context->id, 'mod_book', 'chapter', $chapter->id);
-            $booktext .= "</div>\n";
+
+            // Grab the images, convert any GIFs to PNG, and return the list of converted images.
+            $giffilenames = array();
+            $imagestring = $word2xml->base64_images($context->id, 'mod_book', 'chapter', $chapter->id, $giffilenames);
+
+            // Grab the chapter text content, and update any GIF image names to the new PNG name.
+            $chaptercontent = $chapter->content;
+            if (count($giffilenames) > 0) {
+                $chaptercontent = str_replace($giffilenames['gif'], $giffilenames['png'], $chaptercontent);
+            }
+            $booktext .= $chaptercontent . $imagestring . "</div>\n";
         }
     }
     $moodlelabels = "<moodlelabels></moodlelabels>\n";
 
     // Convert the XHTML string into a Word-compatible version, with image data embedded in Word 365-compatible way.
-    $booktext = $word2xml->export($booktext, 'book', $moodlelabels, 'embedded');
+    $booktext = $word2xml->export($booktext, 'booktool_wordimport', $moodlelabels, 'embedded');
     return $booktext;
 }
 

@@ -215,10 +215,10 @@
         <xsl:when test="$pluginname = 'booktool_wordimport'">
             <xsl:value-of select="'Book'"/>
         </xsl:when>
-        <xsl:when test="$pluginname = 'glossary_wordimport'">
+        <xsl:when test="$pluginname = 'local_glossary_wordimport'">
             <xsl:value-of select="'Glossary'"/>
         </xsl:when>
-        <xsl:when test="$pluginname = 'lesson_wordimport'">
+        <xsl:when test="$pluginname = 'local_lesson_wordimport'">
             <xsl:value-of select="'Lesson'"/>
         </xsl:when>
         <xsl:otherwise>
@@ -272,7 +272,7 @@
 <xsl:template match="processing-instruction('replace')[.='insert-styletemplate']">
     <!-- Set the default Word template used in the file (part 1) -->
     <xsl:choose>
-    <xsl:when test="$pluginname = 'qformat_wordtable' or $pluginname = 'glossary_wordimport'">
+    <xsl:when test="$pluginname = 'qformat_wordtable' or $pluginname = 'local_glossary_wordimport'">
         <xsl:text>moodleQuestion.dotx</xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -286,7 +286,7 @@
     <xsl:element name="w:AttachedTemplate">
         <xsl:attribute name="HRef">
             <xsl:choose>
-            <xsl:when test="$pluginname = 'qformat_wordtable' or $pluginname = 'glossary_wordimport'">
+            <xsl:when test="$pluginname = 'qformat_wordtable' or $pluginname = 'local_glossary_wordimport'">
                 <xsl:text>moodleQuestion.dotx</xsl:text>
             </xsl:when>
             <xsl:otherwise>
