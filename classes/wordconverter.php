@@ -124,9 +124,10 @@ class wordconverter {
      *
      * @param string $filename Word file
      * @param array $imagesforzipping array to store embedded image files
+     * @param bool $convertgifs Convert GIF images to PNG.
      * @return string XHTML content extracted from Word file and split into files
      */
-    public function import(string $filename, array &$imagesforzipping) {
+    public function import(string $filename, array &$imagesforzipping, bool $convertgifs = false) {
         global $CFG;
 
         // Check that we can unzip the Word .docx file into its component files.
@@ -171,8 +172,7 @@ class wordconverter {
                 $imagesuffix = strtolower(pathinfo($zefilename, PATHINFO_EXTENSION));
                 if ($imagesuffix == 'jpg') {
                     $imagesuffix = "jpeg";
-                } else if ($imagesuffix == "gif" && ($this->xsltparameters['pluginname'] == 'qformat_wordtable' ||
-                                $this->xsltparameters['pluginname'] == 'local_glossary_wordimport')) {
+                } else if ($imagesuffix == "gif" && $convertgifs) {
                     // For Glossaries and Questions, convert GIF images to PNG on import, not on export.
                     // This is because it is too hard to identify them in PHP when exporting.
                     list ($pngfilename, $imagedata) = $this->giftopng($imagedata, $imagename);

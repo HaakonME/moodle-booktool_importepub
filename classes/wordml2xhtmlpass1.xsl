@@ -4645,67 +4645,6 @@
                         <meta name="{@name}" content="{normalize-space(.)}"/>
                     </xsl:if>
                 </xsl:for-each>
-
-                <!-- Image data in Base64, generated from files in word/media folder of .docx file -->
-                <xsl:if test="$debug_flag &gt; 1">
-                    <xsl:value-of select="$debug_newline"/>
-                    <imagesContainer>
-                        <xsl:for-each select="$imagesContainer/*">
-                            <xsl:value-of select="$debug_newline"/>
-                            <file filename="{@filename}" mime-type="{@mime-type}">
-                                <xsl:value-of select="substring(normalize-space(.), 1, 100)"/>
-                            </file>
-                        </xsl:for-each>
-                        <xsl:value-of select="$debug_newline"/>
-                    </imagesContainer>
-                    <xsl:value-of select="$debug_newline"/>
-                </xsl:if>
-                <!-- Image relationships from file word/_rels/document.xml.rels -->
-                <xsl:if test="$debug_flag &gt; 1">
-                    <xsl:value-of select="$debug_newline"/>
-                    <imageLinks>
-                        <xsl:for-each select="$imageLinks">
-                            <xsl:value-of select="$debug_newline"/>
-                            <Relationship Id="{@Id}" Target="{@Target}" TargetMode="{@TargetMode}"/>
-                        </xsl:for-each>
-                        <xsl:value-of select="$debug_newline"/>
-                    </imageLinks>
-                </xsl:if>
-                <!-- Style mapping language-specific names to language-independent ids from file word/styles.xml -->
-                <xsl:if test="$debug_flag &gt; 1">
-                    <xsl:value-of select="$debug_newline"/>
-                    <styleMap>
-                        <xsl:comment><xsl:value-of select="concat('style count: ', count($nsStyles[name() = 'w:style']))"/></xsl:comment>
-                        <xsl:for-each select="$nsStyles">
-                            <xsl:value-of select="$debug_newline"/>
-                            <style styleId="{@w:styleId}" styleName="{w:name/@w:val}" customStyle="{@w:customStyle}"/>
-                        </xsl:for-each>
-                        <xsl:value-of select="$debug_newline"/>
-                    </styleMap>
-                </xsl:if>
-                <!-- Hyperlink mapping from file word/_rels/document.xml.rels -->
-                <xsl:if test="$debug_flag &gt; 1">
-                    <xsl:value-of select="$debug_newline"/>
-                    <hyperLinks>
-                        <xsl:comment><xsl:value-of select="concat('link count: ', count($hyperLinks))"/></xsl:comment>
-                        <xsl:for-each select="$hyperLinks">
-                            <xsl:value-of select="$debug_newline"/>
-                            <xsl:element name="Relationship">
-                                <xsl:attribute name="Id">
-                                    <xsl:value-of select="@Id"/>
-                                </xsl:attribute>
-                                <xsl:attribute name="Target">
-                                    <xsl:value-of select="@Target"/>
-                                </xsl:attribute>
-                                <xsl:attribute name="TargetMode">
-                                    <xsl:value-of select="@TargetMode"/>
-                                </xsl:attribute>
-                            </xsl:element>
-                        </xsl:for-each>
-                        <xsl:value-of select="$debug_newline"/>
-                    </hyperLinks>
-                    <xsl:value-of select="$debug_newline"/>
-                </xsl:if>
             </head>
             <body>
                 <div class="level1">
