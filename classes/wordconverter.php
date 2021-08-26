@@ -78,7 +78,6 @@ class wordconverter {
             );
     }
 
-
     /**
      * Process XML using XSLT script
      *
@@ -232,15 +231,12 @@ class wordconverter {
         // Add Base64 images section and close the merged XML file.
         $wordmldata .= $documentlinks . "<imagesContainer>\n" . $imagestring . "</imagesContainer>\n";
         $wordmldata .= "</pass1Container>";
-        $this->debug_write($wordmldata, "wml");
 
         // Pass 1 - convert WordML into linear XHTML.
         $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1);
-        $this->debug_write($xsltoutput, "p1x");
 
         // Pass 2 - tidy up linear XHTML.
         $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2);
-        $this->debug_write($xsltoutput, "p2x");
 
         // Remove extra superfluous markup included in the Word to XHTML conversion.
         $xsltoutput = str_replace("</strong><strong>", "", $xsltoutput);
@@ -264,11 +260,10 @@ class wordconverter {
      * @return string Word-compatible XHTML text
      */
     public function export(string $xhtmldata, string $module, string $moodlelabels, string $imagehandling = 'embedded') {
-        global $OUTPUT;
 
         // Check the HTML template exists.
         if (!file_exists($this->wordfiletemplate)) {
-            echo $OUTPUT->notification(get_string('stylesheetunavailable', 'booktool_wordimport', $this->wordfiletemplate));
+            throw new \moodle_exception(get_string('stylesheetunavailable', 'booktool_wordimport', $this->wordfiletemplate));
             return false;
         }
 
@@ -292,7 +287,6 @@ class wordconverter {
                 $cleancontent . "</body></html></container>\n" .
                 "<htmltemplate>\n" . file_get_contents($this->wordfiletemplate) . "\n</htmltemplate>\n" .
                 $moodlelabels . "</container>";
-        $this->debug_write($xhtmloutput, "xml");
 
         // Do Pass 2 XSLT transformation (Pass 1 must be done in separate convert() call if necessary).
         $xsltoutput = $this->convert($xhtmloutput, $this->exportstylesheet, $parameters);
