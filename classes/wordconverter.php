@@ -79,14 +79,14 @@ class wordconverter {
     }
 
     /**
-     * Process XML using XSLT script
+     * Transform XML using XSLT script
      *
      * @param string $xmldata XML-formatted content
      * @param string $xslfile Full path to XSLT script file
      * @param array $parameters Extra XSLT parameters, if any
      * @return string Processed XML content
      */
-    public function convert(string $xmldata, string $xslfile, array $parameters = array()) {
+    public function xsltransform(string $xmldata, string $xslfile, array $parameters = array()) {
         global $CFG;
 
         // Set common parameters for all XSLT transformations. Note that the XSLT processor doesn't support $arguments.
@@ -106,10 +106,10 @@ class wordconverter {
         $xsltproc = xslt_create();
         if (!($xsltoutput = xslt_process($xsltproc, $tempxmlfilename, $xslfile, null, null, $this->xsltparameters))) {
             // Transformation failed.
-            $this->debug_unlink($tempxmlfilename);
+            unlink($tempxmlfilename);
             throw new \moodle_exception('transformationfailed', 'booktool_wordimport', $tempxmlfilename);
         }
-        $this->debug_unlink($tempxmlfilename);
+        unlink($tempxmlfilename);
 
         // Clean namespaces.
         $xsltoutput = $this->clean_namespaces($xsltoutput);
@@ -133,7 +133,7 @@ class wordconverter {
         $zipres = zip_open($filename);
         if (!is_resource($zipres)) {
             // Cannot unzip file.
-            $this->debug_unlink($filename);
+            unlink($filename);
             throw new \moodle_exception('cannotunzipfile', 'error');
         }
 
@@ -233,17 +233,17 @@ class wordconverter {
         $wordmldata .= "</pass1Container>";
 
         // Pass 1 - convert WordML into linear XHTML.
-        $xsltoutput = $this->convert($wordmldata, $this->word2xmlstylesheet1);
+        $xsltoutput = $this->xsltransform($wordmldata, $this->word2xmlstylesheet1);
 
         // Pass 2 - tidy up linear XHTML.
-        $xsltoutput = $this->convert($xsltoutput, $this->word2xmlstylesheet2);
+        $xsltoutput = $this->xsltransform($xsltoutput, $this->word2xmlstylesheet2);
 
         // Remove extra superfluous markup included in the Word to XHTML conversion.
         $xsltoutput = str_replace("</strong><strong>", "", $xsltoutput);
         $xsltoutput = str_replace("</em><em>", "", $xsltoutput);
         $xsltoutput = str_replace("</u><u>", "", $xsltoutput);
 
-        $this->debug_unlink($filename);
+        unlink($filename);
         return $xsltoutput;
     }   // End import function.
 
@@ -289,7 +289,7 @@ class wordconverter {
                 $moodlelabels . "</container>";
 
         // Do Pass 2 XSLT transformation (Pass 1 must be done in separate convert() call if necessary).
-        $xsltoutput = $this->convert($xhtmloutput, $this->exportstylesheet, $parameters);
+        $xsltoutput = $this->xsltransform($xhtmloutput, $this->exportstylesheet, $parameters);
         $xsltoutput = $this->clean_comments($xsltoutput);
         $xsltoutput = $this->clean_xmldecl($xsltoutput);
 
@@ -553,7 +553,7 @@ class wordconverter {
      * @param string $xhtmldata complete XHTML text including head element metadata
      * @return string XHTML text inside <body> element
      */
-    public function body_only($xhtmldata) {
+    public function htmlbody($xhtmldata) {
         ;
         if (($htmlbody = toolbook_importhtml_parse_body($xhtmldata)) != '') {
             return $htmlbody;
