@@ -1,7 +1,6 @@
 # Change log
 
 Date          Version   Comment
-2021/08/27    1.4.11    Clean up code and rename convert method to xsltransform.
 2021/08/21    1.4.10    Support import of Word questions, convert GIF images, manage access to import/export facilities.
 2021/07/14    1.4.9     Strip out unwanted markup inside Word document XML file.
 2021/05/03    1.4.8     Support language markup in text.
