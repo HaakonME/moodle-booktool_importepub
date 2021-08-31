@@ -312,8 +312,11 @@ class wordconverter {
         // Split the single HTML file into multiple chapters based on h3 elements.
         $h3matches = null;
         $chaptermatches = null;
+        $htmlelement = '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">';
         // Grab title and contents of each 'Heading 1' section, which is mapped to h3.
         $chaptermatches = preg_split('#<h3>.*</h3>#isU', $htmlcontent);
+        $langmatches = array();
+        preg_match('#<meta name="moodleLanguage" content="(.*)"/>#i', $htmlcontent, $langmatches);
         preg_match_all('#<h3>(.*)</h3>#i', $htmlcontent, $h3matches);
 
         // If no h3 elements are present, treat the whole file as a single chapter.
@@ -344,7 +347,7 @@ class wordconverter {
                 // First save the initial chapter content.
                 $chapcontent = $subchaptermatches[0];
                 $chapfilename = sprintf("index%02d_00.htm", $i);
-                $htmlfilecontent = "<html><head><title>{$chaptitle}</title></head>" .
+                $htmlfilecontent = $htmlelement . "<head><title>{$chaptitle}</title>" . $langmatches[0] . "</head>" .
                     "<body>{$chapcontent}</body></html>";
                 $zipfile->addFromString($chapfilename, $htmlfilecontent);
 
@@ -353,13 +356,13 @@ class wordconverter {
                     $subchaptitle = strip_tags($h4matches[1][$j - 1]);
                     $subchapcontent = $subchaptermatches[$j];
                     $subsectionfilename = sprintf("index%02d_%02d_sub.htm", $i, $j);
-                    $htmlfilecontent = "<html><head><title>{$subchaptitle}</title></head>" .
+                    $htmlfilecontent = $htmlelement . "<head><title>{$subchaptitle}</title>" . $langmatches[0] . "</head>" .
                         "<body>{$subchapcontent}</body></html>";
                     $zipfile->addFromString($subsectionfilename, $htmlfilecontent);
                 }
             } else {
                 // Save each section as a HTML file.
-                $htmlfilecontent = "<html><head><title>{$chaptitle}</title></head>" .
+                $htmlfilecontent = $htmlelement . "<head><title>{$chaptitle}</title>" . $langmatches[0] . "</head>" .
                     "<body>{$chapcontent}</body></html>";
                 $zipfile->addFromString($chapfilename, $htmlfilecontent);
             }
