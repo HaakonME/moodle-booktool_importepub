@@ -312,7 +312,8 @@ class wordconverter {
         // Split the single HTML file into multiple chapters based on h3 elements.
         $h3matches = null;
         $chaptermatches = null;
-        $htmlelement = '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">';
+        $htmlelement = '<html xmlns="http://www.w3.org/1999/xhtml" ' .
+            'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">';
         // Grab title and contents of each 'Heading 1' section, which is mapped to h3.
         $chaptermatches = preg_split('#<h3>.*</h3>#isU', $htmlcontent);
         $langmatches = array();
