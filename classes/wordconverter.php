@@ -130,8 +130,8 @@ class wordconverter {
         global $CFG;
 
         // Check that we can unzip the Word .docx file into its component files.
-        $zipres = zip_open($filename);
-        if (!is_resource($zipres)) {
+        $zipfile = new \ZipArchive();
+        if (!($zipfile->open($filename))) {
             // Cannot unzip file.
             unlink($filename);
             throw new \moodle_exception('cannotunzipfile', 'error');
@@ -153,20 +153,25 @@ class wordconverter {
         $gifimagefilenames = array();
         $pngimagefilenames = array();
 
-        $zipentry = zip_read($zipres);
-        while ($zipentry) {
-            if (!zip_entry_open($zipres, $zipentry, "r")) {
+        $fileCount = $zipfile->numFiles;
+        for ($idx = 0; $idx < $fileCount; $idx++) {
+            $entry = $zipfile->statIndex($idx);
+            if ($entry === false) {
                 // Can't read the XML file from the Word .docx file.
-                zip_close($zipres);
+                $zipfile->close();
                 throw new \moodle_exception('errorunzippingfiles', 'error');
             }
 
-            $zefilename = zip_entry_name($zipentry);
-            $zefilesize = zip_entry_filesize($zipentry);
+            $zefilename = $entry['name'];
+
+            $data = $zipfile->getFromIndex($idx);
+            if($data === false){ // in case of directory
+                continue;
+            }
 
             // Insert internal images into the array of images.
             if (!(strpos($zefilename, "media") === false)) {
-                $imagedata = zip_entry_read($zipentry, $zefilesize);
+                $imagedata = $data;
                 $imagename = basename($zefilename);
                 $imagesuffix = strtolower(pathinfo($zefilename, PATHINFO_EXTENSION));
                 if ($imagesuffix == 'jpg') {
@@ -190,7 +195,7 @@ class wordconverter {
             } else {
                 // Look for required XML files, read and wrap it, remove the XML declaration, and add it to the XML string.
                 // Read and wrap XML files, remove the XML declaration, and add them to the XML string.
-                $xmlfiledata = preg_replace('/<\?xml version="1.0" ([^>]*)>/', "", zip_entry_read($zipentry, $zefilesize));
+                $xmlfiledata = preg_replace('/<\?xml version="1.0" ([^>]*)>/', "", $data);
                 switch ($zefilename) {
                     case "word/document.xml":
                         $wordmldata .= "<wordmlContainer>" . $xmlfiledata . "</wordmlContainer>\n";
@@ -215,10 +220,8 @@ class wordconverter {
                         break;
                 }
             }
-            // Get the next file in the Zip package.
-            $zipentry = zip_read($zipres);
-        }  // End while loop.
-        zip_close($zipres);
+        }  // End for loop.
+        $zipfile->close();
 
         // Preprocess the document links and images to rename any re-formatted GIF images to be PNGs instead.
         // Fixing filenames in the document links is the simplest solution for this issue.
