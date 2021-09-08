@@ -85,7 +85,7 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
         $booktext .= '<p class="MsoTitle">' . $book->name . "</p>\n";
         // Grab the images, convert any GIFs to PNG, and return the list of converted images.
         $giffilenames = array();
-        $imagestring = $word2xml->base64_images($context->id, 'mod_book', 'intro', null, $giffilenames);
+        $imagestring = $word2xml->base64_images($context->id, 'mod_book', 'intro', $giffilenames, null);
 
         $introcontent = $book->intro;
         if (count($giffilenames) > 0) {
@@ -110,7 +110,7 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
 
             // Grab the images, convert any GIFs to PNG, and return the list of converted images.
             $giffilenames = array();
-            $imagestring = $word2xml->base64_images($context->id, 'mod_book', 'chapter', $chapter->id, $giffilenames);
+            $imagestring = $word2xml->base64_images($context->id, 'mod_book', 'chapter', $giffilenames, $chapter->id);
 
             // Grab the chapter text content, and update any GIF image names to the new PNG name.
             $chaptercontent = $chapter->content;

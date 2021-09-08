@@ -436,7 +436,7 @@ class wordconverter {
      * @param string $chapterid the chapter or page ID (optional)
      * @return string the modified HTML with embedded images
      */
-    public function base64_images(string $contextid, string $component, string $filearea, $chapterid = null, array &$giffilenames) {
+    public function base64_images(string $contextid, string $component, string $filearea, array &$giffilenames, $chapterid = null) {
         // Get the list of files embedded in the book or chapter.
         // Note that this will break on images in the Book Intro section.
         $imagestring = '';
