@@ -102,9 +102,9 @@ function booktool_wordimport_export(stdClass $book, context_module $context, int
         if (!$chapter->hidden || has_capability('mod/book:viewhiddenchapters', $context)) {
             $booktext .= '<div class="chapter" id="' . $chapter->id . '">';
             // Check if the chapter title is duplicated inside the content, and include it if not.
-            if (!$chapter->subchapter and !strpos($chapter->content, "<h1")) {
+            if (!$chapter->subchapter && !strpos($chapter->content, "<h1")) {
                 $booktext .= "<h1>" . $chapter->title . "</h1>\n";
-            } else if ($chapter->subchapter and !strpos($chapter->content, "<h2")) {
+            } else if ($chapter->subchapter && !strpos($chapter->content, "<h2")) {
                 $booktext .= "<h2>" . $chapter->title . "</h2>\n";
             }
 

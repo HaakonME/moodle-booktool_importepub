@@ -153,8 +153,8 @@ class wordconverter {
         $gifimagefilenames = array();
         $pngimagefilenames = array();
 
-        $fileCount = $zipfile->numFiles;
-        for ($idx = 0; $idx < $fileCount; $idx++) {
+        $filecount = $zipfile->numFiles;
+        for ($idx = 0; $idx < $filecount; $idx++) {
             $entry = $zipfile->statIndex($idx);
             if ($entry === false) {
                 // Can't read the XML file from the Word .docx file.
@@ -165,7 +165,8 @@ class wordconverter {
             $zefilename = $entry['name'];
 
             $data = $zipfile->getFromIndex($idx);
-            if($data === false){ // in case of directory
+            if ($data === false) {
+                // A directory.
                 continue;
             }
 
@@ -186,7 +187,7 @@ class wordconverter {
                 }
 
                 // Internet formats like GIF, PNG and JPEG are supported, but not non-Internet formats like BMP or EPS.
-                if ($imagesuffix == 'gif' or $imagesuffix == 'png' or $imagesuffix == 'jpeg') {
+                if ($imagesuffix == 'gif' || $imagesuffix == 'png' || $imagesuffix == 'jpeg') {
                     $imagesforzipping[$imagename] = $imagedata;
                     $imagemimetype = "image/" . $imagesuffix;
                     $imagestring .= '<file filename="media/' . $imagename . '" mime-type="' . $imagemimetype . '">'
@@ -452,7 +453,7 @@ class wordconverter {
         foreach ($files as $fileinfo) {
             // Process image files, converting them into Base64 encoding.
             $fileext = strtolower(pathinfo($fileinfo->get_filename(), PATHINFO_EXTENSION));
-            if ($fileext == 'png' or $fileext == 'jpg' or $fileext == 'jpeg' or $fileext == 'gif') {
+            if ($fileext == 'png' || $fileext == 'jpg' || $fileext == 'jpeg' || $fileext == 'gif') {
                 $filename = $fileinfo->get_filename();
                 $filetype = ($fileext == 'jpg') ? 'jpeg' : $fileext;
                 $fileitemid = $fileinfo->get_itemid();
@@ -648,7 +649,7 @@ class wordconverter {
         $foundpluginfilenames = preg_match_all('~(.*?)<img src="@@PLUGINFILE@@/([^"]*)(.*)~s', $cleanxhtml,
                                     $pluginfilematches, PREG_SET_ORDER);
         $nummatches = count($pluginfilematches);
-        if ($foundpluginfilenames and $foundpluginfilenames != 0) {
+        if ($foundpluginfilenames && $foundpluginfilenames != 0) {
             $urldecodedstring = "";
             // Process the possibly-URL-escaped filename so that it matches the name in the file element.
             for ($i = 0; $i < $nummatches; $i++) {
