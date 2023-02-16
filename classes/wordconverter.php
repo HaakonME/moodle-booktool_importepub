@@ -410,6 +410,7 @@ class wordconverter {
     public function zip_images(string $zipfilename, array $images) {
         // Create a temporary Zip file.
         $zipfile = new \ZipArchive();
+        unlink($zipfilename);
         if (!($zipfile->open($zipfilename, ZipArchive::CREATE))) {
             // Cannot open zip file.
             throw new \moodle_exception('cannotopenzip', 'error');
