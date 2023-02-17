@@ -563,7 +563,6 @@ class wordconverter {
      * @return string XHTML text inside <body> element
      */
     public function htmlbody($xhtmldata) {
-        ;
         if (($htmlbody = toolbook_importhtml_parse_body($xhtmldata)) != '') {
             return $htmlbody;
         } else {
